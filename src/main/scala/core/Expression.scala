@@ -81,8 +81,8 @@ trait Term extends Expression with Operators {
     case _ => BinOp("*")(this, that)
   }
 
-  /** Divide two terms. If both terms are number then divides both of those two numbers
-    * but the type of output depends on type of numbers given as arguments
+  /** Divide two terms. If both terms are number then divides both of those two
+    * numbers but the type of output depends on type of numbers given as arguments
     */
   def /(that: Term) = (this, that) match {
     case (a: Number,b: Number) => a / b
@@ -91,10 +91,12 @@ trait Term extends Expression with Operators {
 
   /** Raise power of one number to the other. If the exponent is 1, then term
     * itself is returned.*/
-//    if (that == Integer(1)) this #MayNotBeCorrect Should be done inside
-//    formatToString
+//  #TODO if (that == Integer(1)) this #MayNotBeCorrect Should be done inside
+//  formatToString
+//  #TODO Handle the exceptions when that==Integer(0)
   def **(that: Term) =
     if (that == Integer(1)) this
+    else if (that == Integer(0)) Integer(1)
     else BinOp("**")(this, that)
 
   /** Absolute value of a term If the term is a number, then returns absolute
@@ -313,12 +315,12 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
     */
   def reduceMultiplicity: Term = f match {
     case BinOp("+") => {
-      val a = reducePartial.args.groupBy(identity).map{case (x, ls) => ((Integer(ls.size)*x))}.toList
-      CompositeTerm(f, a)
+      val a = args.groupBy(identity).map{case (x,ls) => ((Integer(ls.size)*x))}
+      CompositeTerm(f, a.toList)
     }
     case BinOp("*") => {
-      val a = reducePartial.args.groupBy(identity).map{case (x, ls) => (x**(Integer(ls.size)))}.toList
-      CompositeTerm(f, a)
+      val a = args.groupBy(identity).map{case (x,ls) => (x**(Integer(ls.size)))}
+      CompositeTerm(f, a.toList)
     }
     case _ => this
   }
@@ -337,7 +339,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   def reduceNumber: Term = {
     f match {
       case BinOp("*") => {
-        val (num, terms) = reducePartial.args partition {
+        val (num, terms) = args partition {
           case _:Number => true;case _ => false }
         def flatNum(l: List[Term], a: Term): Term = l match {
           case Nil => a;
@@ -346,7 +348,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
         CompositeTerm(BinOp("*"), flatNum(num, Integer(1)) :: terms)
       }
       case BinOp("+") => {
-        val (num, terms) = reducePartial.args partition {
+        val (num, terms) = args partition {
           case _:Number => true;case _ => false }
         def flatNum(l: List[Term], a: Term): Term = l match {
           case Nil => a;
@@ -390,7 +392,8 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
       }
       if ((l.length%2 == 0 && n.signum==1)||(l.length % 2==1 && n.signum == -1))
         CompositeTerm(f, List(n.abs) ++ t ++ l)
-      else CompositeTerm(UnaryOp("-"), CompositeTerm(f, List(n.abs) ++ t ++ l) :: Nil)
+      else
+        CompositeTerm(UnaryOp("-"), CompositeTerm(f, List(n.abs) ++ t ++ l)::Nil)
     }
     case _ => this
   }
@@ -415,20 +418,29 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   // reducePartial.(recurRedMul.reducePartial)*n reduce until the
   // CompositeTerm no longer simplifies
   // Changing the order of functions creates error.
-  lazy val reduce: Term = reducePartial.recurRedMul.reducePartial.recurRedNum.recurGroupNeg
+  lazy val reduce: Term =
+    reducePartial.recurRedMul.recurRedNum.reducePartial.recurGroupNeg
 
   /** Differentiate the CompositeTerm with respect to an independent variable `x` */
   // #TODO write cases for operators abs, **, -, /
   // Is reducePartial.args the correct way to do things??
   def diff(x: Symbol): Term = f match {
-    case BinOp("+") => CompositeTerm(f, args.map(_.diff(x)))
+    case BinOp("+") | UnaryOp("-") => CompositeTerm(f, args.map(_.diff(x)))
     case BinOp("*") => {
-      val terms = reducePartial.args
-      val a = terms.zipWithIndex.map {
+      val a = args.zipWithIndex.map {
         case (_, i) =>
-          terms.zipWithIndex.map { case (xs, j) => if (i == j) xs.diff(x) else xs }
+          args.zipWithIndex.map{case (xs, j) => if (i == j) xs.diff(x) else xs}
       }
-      CompositeTerm(BinOp("+"), a.map(CompositeTerm(f, _))).reducePartial.reduceToSingle
+      CompositeTerm(BinOp("+"), a.map(CompositeTerm(f, _)))
+    }
+    case BinOp("**") => {
+      args(1) match {
+        case a: Integer => {
+          val list = List(a, args(0)**(a-Integer(1)), args(0).diff(x))
+          CompositeTerm(BinOp("*"), list)
+        }
+        case _ => BinOp("diff")(this, x)
+      }
     }
     case _ => BinOp("diff")(this, x)
   }
@@ -478,11 +490,11 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
     case b @ CompositeTerm(_, _) => {
       val c = b.reduce
       c match {
-        case that: CompositeTerm =>
-          (that.args.toSet == this.reduce.args.toSet) && (this.f == that.f)
+        case CompositeTerm(f, a) => (a.toSet == reduce.args.toSet)
         case _ => false
       }
     }
+    case b: Term => (b.reduce == reduce)
     case _ => false
   }
 

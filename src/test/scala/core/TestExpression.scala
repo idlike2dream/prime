@@ -20,7 +20,7 @@ class Expression extends FunSuite {
     assert((x+1+1+2).reduce === (x+4))
   }
   test("4"){
-    assert((x*x*x*x*x).diff(x).reduce === (5*(x**4)))
+    assert((x*x*x*x*x).reduce.diff(x) === (5*(x**4)))
   }
   test("5"){
     assert((x+x+x+x).reduce === (4*x))
@@ -29,16 +29,16 @@ class Expression extends FunSuite {
     assert((x*x*x*x*x).reduce === (x**5))
   }
   test("7"){
-    assert(((x*x*x)+(x*x)+(x)).diff(x).reduce === (3*(x**2) + 2*x + 1))
+    assert(((x*x*x)+(x*x)+(x)).reduce.diff(x) === (3*(x**2) + 2*x + 1))
   }
   test("8"){
-    assert((x*x*x).diff(x, 3).reduce === Integer(6))
+    assert((x*x*x).reduce.diff(x, 3) === Integer(6))
   }
   test("9"){
-    assert((x*x*x*x).diff(x, 4).reduce === Integer(24))
+    assert((x*x*x*x).reduce.diff(x, 4) === Integer(24))
   }
   test("10"){
-    assert((x*x*x*(0*y*y*x)).reduce === Integer(0))
+    assert((x*x*x*(0*y*y*x)) === Integer(0))
   }
   test("11"){
     assert((x-0).reduce === x)
@@ -46,9 +46,9 @@ class Expression extends FunSuite {
   test("12"){
     assert((x-y).toString === "(x - y)")
   }
-//  test("13"){
-//    assert((x-y-y).reduce.toString === "(x - 2*y)")      //fails
-//  }
+  test("13"){
+    assert((x-y-y).reduce === (x - 2*y))
+  }
   test("14"){
     assert((x*3*4*2*x*x).reduce === (24*(x**3)))
   }
