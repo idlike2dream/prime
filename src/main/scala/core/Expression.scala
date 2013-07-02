@@ -137,6 +137,7 @@ trait Term extends Expression with Operators {
   def reduceNumber: Term
   def reduceUnaryNeg: Term
   def reduceGroupNeg: Term
+  def reduceMinusAbs: Term
 
   def recurSubs(from: Term, to: Term): Term
   def recurFlatten(f: BinOp): Term
@@ -147,6 +148,7 @@ trait Term extends Expression with Operators {
   def recurRedNum: Term
   def recurUnaryNeg: Term
   def recurGroupNeg: Term
+  def recurMinusAbs: Term
 
   def reducePartial: Term
   def reduce: Term
@@ -192,6 +194,9 @@ trait AtomicTerm extends Term {
   /** Simply returns the atomic term itself */
   def reduceGroupNeg: Term = this
 
+  /** Simply returns the atomic term itself */
+  def reduceMinusAbs: Term = this
+
   /** Simply returns the atomic term itslef */
   def recurSubs(from: Term, to: Term): Term = this
 
@@ -218,6 +223,9 @@ trait AtomicTerm extends Term {
 
   /** Simply returns the atomic term itself */
   def recurGroupNeg: Term = this
+
+  /** Simply returns the atomic term itself */
+  def recurMinusAbs: Term = this
 
   /** Simply returns the atomic term itself */
   def reducePartial: Term = this
@@ -276,6 +284,10 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
     * structure */
   def recurGroupNeg: Term =
     CompositeTerm(f, args map (_.recurGroupNeg)).reduceGroupNeg
+
+  def recurMinusAbs: Term =
+    CompositeTerm(f, args map (_.recurMinusAbs)).reduceMinusAbs
+
 
   /** Flattens the CompositeTerm tree structure with respect to an associative
     * operator `func` only the top most layer.*/
@@ -386,8 +398,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
       // Assumption that reduceNumber is already done if no number is present
       // by default 1 is assumed.
       val (n, t): (Number, List[Term]) = pos match {
-        case x@ ((a@(_: Number)):: Nil) => (a, Nil)
-        case x@ ((a@(_: Number)) :: _) => (a, pos.tail)
+        case (a: Number) :: _ => (a, pos.tail)
         case _ => (Integer(1), pos)
       }
       if ((l.length%2 == 0 && n.signum==1)||(l.length % 2==1 && n.signum == -1))
@@ -403,6 +414,10 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   // Even a corresponding recur term
 
   // #TODO Write a method that does abs(-x) to this (abs(-1)*abs(x))=abs(x)
+  def reduceMinusAbs: Term = (f, args) match {
+    case (UnaryOp("abs"), CompositeTerm(UnaryOp("-"), a::Nil)::Nil) => a
+    case _ => this
+  }
 
   // TestExpression.scala tests fail when recurRedMul is included inside.
   // So this exists as a seperate entity
@@ -419,11 +434,10 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   // CompositeTerm no longer simplifies
   // Changing the order of functions creates error.
   lazy val reduce: Term =
-    reducePartial.recurRedMul.recurRedNum.reducePartial.recurGroupNeg
+    reducePartial.recurRedMul.recurRedNum.reducePartial.recurGroupNeg.recurMinusAbs
 
-  /** Differentiate the CompositeTerm with respect to an independent variable `x` */
-  // #TODO write cases for operators abs, **, -, /
-  // Is reducePartial.args the correct way to do things??
+  /** Differentiate the CompositeTerm with respect to an independent variable `x`*/
+  // #TODO write cases for operators abs, /
   def diff(x: Symbol): Term = f match {
     case BinOp("+") | UnaryOp("-") => CompositeTerm(f, args.map(_.diff(x)))
     case BinOp("*") => {
@@ -486,6 +500,11 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   override def toString = reducePartial.formatToString
 
   /** Experimenting with `==` Not final yet. */
+  // Test 18 passes when there is reduce.reduce on other side
+  // #TODO Rework equals definition without reduce so that recursive reduction
+  // is possible But that means ((-1*x).abs == x) and (x*0 == 0) is lost
+  // reduce has to be explicitly mentioned (that sort of equality is lost)
+
   override def equals(a: Any) = a match {
     case b @ CompositeTerm(_, _) => {
       val c = b.reduce
@@ -494,7 +513,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
         case _ => false
       }
     }
-    case b: Term => (b.reduce == reduce)
+    case b: Term => (b.reduce == reduce.reduce)
     case _ => false
   }
 
