@@ -7,32 +7,19 @@ abstract class Function(val degree: Int) extends Expression {
   def op: String
 
   /** Substitute parameters in the predicate */
-  def apply(args: List[Term]): Term //= CompositeTerm(this, args)
+  def apply(args: List[Term]): Term = {
+    assert(args.length == degree)
+    CompositeTerm(this, args)
+  }
 
   /** Substitute parameters in the function */
-  def apply(args: Term*): Term //= CompositeTerm(this, args.toList)
+  def apply(args: Term*): Term = CompositeTerm(this, args.toList)
 
 }
 
-case class BinOp(op: String) extends Function(2) {
+case class BinOp(op: String) extends Function(2)
 
-  def apply(args: List[Term]): CompositeTerm = {
-    assert(args.length == degree)
-    CompositeTerm(this, args)
-  }
-
-  def apply(args: Term*): CompositeTerm = apply(args.toList)
-}
-
-case class UnaryOp(op: String) extends Function(1) {
-
-  def apply(args: List[Term]): CompositeTerm = {
-    assert(args.length == degree)
-    CompositeTerm(this, args)
-  }
-
-  def apply(args: Term*): CompositeTerm = apply(args.toList)
-}
+case class UnaryOp(op: String) extends Function(1)
 
 trait Operators {
 
@@ -394,7 +381,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
         case x@ ((a@(_: Number)) :: _) => (a, pos.tail)
         case _ => (Integer(1), pos)
       }
-      if ((l.length%2 == 0 && n.signum==1)||(l.length % 2==1 && n.signum == -1)) 
+      if ((l.length%2 == 0 && n.signum==1)||(l.length % 2==1 && n.signum == -1))
         CompositeTerm(f, List(n.abs) ++ t ++ l)
       else CompositeTerm(UnaryOp("-"), CompositeTerm(f, List(n.abs) ++ t ++ l) :: Nil)
     }
@@ -484,7 +471,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
     case b @ CompositeTerm(_, _) => {
       val c = b.reduce
       c match {
-        case that: CompositeTerm => 
+        case that: CompositeTerm =>
           (that.args.toSet == this.reduce.args.toSet) && (this.f == that.f)
         case _ => false
       }
