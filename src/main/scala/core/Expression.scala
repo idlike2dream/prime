@@ -3,6 +3,7 @@ package prime.core
 sealed trait Expression
 
 abstract class Function(val degree: Int) extends Expression {
+
   /** Name of function */
   def op: String
 
@@ -104,8 +105,6 @@ trait Term extends Expression with Operators {
   }
 
   /** Multiply with -1 */
-  // Should this be Integer(-1)*this?? But this makes life diffculut while
-  //  handling non-associativeness of - I guess.
   def unary_- : Term = UnaryOp("-")(this)
 
   /** Differentiate n times with respect to . to independent variable x */
@@ -123,6 +122,11 @@ trait Term extends Expression with Operators {
     */
   def args: List[Term]
 
+  /** Replaces the `this` with `to` if `this == from` */
+  def subs(from: Term, to: Term): Term =
+    if (this == from) to
+    else this
+
   def flatten(func: BinOp): Term
   def delId(f: BinOp, id: Term): Term
   def reduceToSingle: Term
@@ -132,6 +136,7 @@ trait Term extends Expression with Operators {
   def reduceUnaryNeg: Term
   def reduceGroupNeg: Term
 
+  def recurSubs(from: Term, to: Term): Term
   def recurFlatten(f: BinOp): Term
   def recurDelId(f: BinOp, id: Term): Term
   def recurSingle: Term
@@ -151,9 +156,6 @@ trait AtomicTerm extends Term {
   /** Has no meaning here Only added for the sake of convinience */
   def args: List[Term] = throw new Error("No arguments in atomic term")
 
-  def subs(from: Term, to: Term): Term =
-    if (this == from) to
-    else this
 
   def diff(x: Symbol): Term
 
@@ -161,7 +163,7 @@ trait AtomicTerm extends Term {
   override def diff(x: Symbol, n: Int): Term = {
     assert(n > 0, throw new Error("n can't less that 1"))
     if (n == 1) diff(x)
-    else diff(x).diff(x)
+    else diff(x).diff(x)    //Should this be simply Integer(0)
   }
 
   /** Simply returns the atomic term itself */
@@ -187,6 +189,9 @@ trait AtomicTerm extends Term {
 
   /** Simply returns the atomic term itself */
   def reduceGroupNeg: Term = this
+
+  /** Simply returns the atomic term itslef */
+  def recurSubs(from: Term, to: Term): Term = this
 
   /** Simply returns the atomic term itself */
   def recurFlatten(f: BinOp): Term = this
@@ -225,8 +230,10 @@ trait AtomicTerm extends Term {
 
 case class CompositeTerm(f: Function, args: List[Term]) extends Term {
 
-  //#TODO write recurSubs
-  def subs (from: Term, to: Term): Term = CompositeTerm(f, args map { _.subs(from, to) })
+  /** Recursively substitute `from` with `to` on the CompositeTerm tree
+    * structure */
+  def recurSubs(from: Term, to: Term): Term =
+    CompositeTerm(f, args map { _.recurSubs(from, to)}).subs(from, to)
 
   /** Recursively flattens the CompositeTerm tree Structure with respect to  to
     * an associative operator `func` */
