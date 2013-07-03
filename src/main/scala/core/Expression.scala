@@ -1,5 +1,7 @@
 package prime.core
 
+// "Broadly, the code looks well-designed, but one must test that the details of recursion are correct"
+
 sealed trait Expression
 
 abstract class Function(val degree: Int) extends Expression {
@@ -57,6 +59,10 @@ trait Operators {
 
 trait Term extends Expression with Operators {
 
+	// "There is an alternative way to do this, namely override in the number class, using super for the
+	// case where you do not override. The advantage is you may add more classes where you have special implementations" 
+	// Same applies for other methods
+	//
   /** Add two terms. If both terms are numbers then gives sum of those two
     * numbers */
   def +(that: Term) = (this, that) match {
@@ -156,6 +162,10 @@ trait AtomicTerm extends Term {
   def diff(x: Symbol): Term
 
   // For n>1 Differentiation of an atomic term just returns 0.
+	//
+	// "Throwing runtime errors is not a good thing for code using this. If you are worried about invalid calls, 
+	// it is best to return Option types and use map/flatMap. Otherwise define a partial function that the caller can use."
+	//
   override def diff(x: Symbol, n: Int): Term = {
     assert(n > 0, throw new Error("n can't less that 1"))
     if (n == 1) diff(x)
