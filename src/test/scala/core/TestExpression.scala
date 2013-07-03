@@ -23,10 +23,10 @@ class Expression extends FunSuite {
     assert((x*x*x*x*x).reduce.diff(x) === (5*(x**4)))
   }
   test("5"){
-    assert((x+x+x+x) === (4*x))
+    assert((x+x+x+x).reduce === (4*x))
   }
   test("6"){
-    assert((x*x*x*x*x) === (x**5))
+    assert((x*x*x*x*x).reduce === (x**5))
   }
   test("7"){
     assert(((x*x*x)+(x*x)+(x)).reduce.diff(x) === (3*(x**2) + 2*x + 1))
@@ -59,7 +59,7 @@ class Expression extends FunSuite {
     assert((x-y-z)=== (x -(y+z)))
   }
   test("17"){
-    assert((x*(-y)*(-3)*(-z)) === (1)*(-3)*x*y*z)
+    assert((x*(-y)*(-3)*(-z)).reduce === (1)*(-3)*x*y*z)
   }
   test("18"){
     assert((-1*x).abs === x)

@@ -119,11 +119,6 @@ trait Term extends Expression with Operators {
     diffAcc(this, x, n)
   }
 
-  /** Has no meaning here Only added for the sake of convinience.
-    * Makes sense only in the context of CompositeTerm
-    */
-  def args: List[Term]
-
   /** Replaces the `this` with `to` if `this == from` */
   def subs(from: Term, to: Term): Term =
     if (this == from) to
@@ -157,9 +152,6 @@ trait Term extends Expression with Operators {
 }
 
 trait AtomicTerm extends Term {
-  /** Has no meaning here Only added for the sake of convinience */
-  def args: List[Term] = throw new Error("No arguments in atomic term")
-
 
   def diff(x: Symbol): Term
 
@@ -383,16 +375,26 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   /** Reduces (x - y - z) to (x - (y+z)) and x*(-y)*(-z) = x*y*z */
   def reduceGroupNeg: Term = f match {
     case BinOp("+") => {
-      val (neg, pos) = args partition {
-        case CompositeTerm(UnaryOp("-"),_) => true; case _ => false
+      val (neg, pos) = {
+        def cmp(a: List[Term], b: List[CompositeTerm], c: List[Term]): (List[CompositeTerm], List[Term]) = a match {
+          case Nil => (b, c)
+          case (x @ CompositeTerm(UnaryOp("-"), _)) :: xs => cmp(xs, b ++ List(x), c)
+          case x :: xs => cmp(xs, b, c++List(x))
+        }
+        cmp(args, Nil, Nil)
       }
       val newNeg = neg map {_.args(0)}
       val negList = CompositeTerm(BinOp("+"), newNeg)::Nil
       CompositeTerm(f, pos++List(CompositeTerm(UnaryOp("-"), negList)))
     }
     case BinOp("*") => {
-      val (neg, pos) = args partition {
-        case CompositeTerm(UnaryOp("-"),_) => true; case _ => false
+      val (neg, pos) = {
+        def cmp(a: List[Term], b: List[CompositeTerm], c: List[Term]): (List[CompositeTerm], List[Term]) = a match {
+          case Nil => (b, c)
+          case (x @ CompositeTerm(UnaryOp("-"), _)) :: xs => cmp(xs, b ++ List(x), c)
+          case x :: xs => cmp(xs, b, c++List(x))
+        }
+        cmp(args, Nil, Nil)
       }
       val l = neg map {_.args(0)}
       // Assumption that reduceNumber is already done if no number is present
@@ -478,8 +480,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
       case ( Nil,   _) => ""
       case (x::Nil, _) => x.toString
       case (_, "+") => args.zipWithIndex.map{
-        case x@ (CompositeTerm(UnaryOp("-"), _), _) =>
-          " - " + (x._1.args(0).toString)
+        case (CompositeTerm(UnaryOp("-"), x:: Nil), _) =>" - " + x
         case x@ _ => if(x._2 == 0) x._1.toString else " + "+x._1
       }.mkString("(", "", ")")
       case (_, "*") | (_, "/")  => args.mkString("(", op, ")")
@@ -506,14 +507,14 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   // reduce has to be explicitly mentioned (that sort of equality is lost)
 
   override def equals(a: Any) = a match {
-    case b @ CompositeTerm(_, _) => {
-      val c = b.reduce
-      c match {
-        case CompositeTerm(f, a) => (a.toSet == reduce.args.toSet)
+    case x @ CompositeTerm(_, _) => {
+      val y = x.reduce
+      (y, reduce) match {
+        case (CompositeTerm(`f`, a), CompositeTerm(`f`, b)) => (a.toSet == b.toSet)
         case _ => false
       }
     }
-    case b: Term => (b.reduce == reduce.reduce)
+    case x: Term => (x.reduce == reduce.reduce)
     case _ => false
   }
 
