@@ -12,6 +12,10 @@ class Simplify extends FunSuite {
     assert(expand(x) === x)
 
     assert(expand(x+y) === (x+y))
+
+    assert(expand(x**2).reduce === x**2)
+
+    assert(expand(x*y).reduce === (x*y))
   }
   test("expand of Multiply"){
     assert(expand((x+y)*(x+y)) === (x**2 + 2*x*y + y**2))
@@ -25,8 +29,11 @@ class Simplify extends FunSuite {
     assert(expand((x+y)*(x+y)*(x+y)).reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
 
     assert(expand((x+y)*y*z) === (x*y*z + y*y*z))
+  }
+  test("expand of power"){
+    assert(expand((x+y)**2) === (x**2 + 2*x*y + y**2))
 
-    assert(expand(x*y).reduce === (x*y))
+    assert(expand((x+y)**3).reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
   }
 
 }

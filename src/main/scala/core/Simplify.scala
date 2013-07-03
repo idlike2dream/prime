@@ -43,12 +43,20 @@ object Simplify {
             pointMul(additiveMul(adds), terms)
         }
       }
+      case CompositeTerm(BinOp("**"), a :: (n: Integer) :: Nil) => {
+        val args = List.fill(n.arg1.toInt)(a)
+        expandHere(CompositeTerm(BinOp("*"), args))
+      }
       case _ => y
     }
 
     def expandRecur(y: Term): Term = y match {
       case CompositeTerm(BinOp("*"), a) =>
         expandHere(CompositeTerm(BinOp("*"), a map {expandRecur(_)} ))
+      case CompositeTerm(BinOp("**"), a :: (n: Integer) :: Nil) => {
+        val args = List.fill(n.arg1.toInt)(a)
+        expandHere(CompositeTerm(BinOp("*"), args map {expandRecur(_)}))
+      }
       case _ => y
     }
 
