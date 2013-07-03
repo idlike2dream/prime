@@ -373,6 +373,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   }
 
   /** Reduces (x - y - z) to (x - (y+z)) and x*(-y)*(-z) = x*y*z */
+  // #TODO Find the culprit that causes " - 0" here and there
   def reduceGroupNeg: Term = f match {
     case BinOp("+") => {
       val (neg, pos) = {
@@ -415,7 +416,6 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   // This doesn't necessarily depend on Ordering because of it's definition.
   // Even a corresponding recur term
 
-  // #TODO Write a method that does abs(-x) to this (abs(-1)*abs(x))=abs(x)
   def reduceMinusAbs: Term = (f, args) match {
     case (UnaryOp("abs"), CompositeTerm(UnaryOp("-"), a::Nil)::Nil) => a
     case _ => this
@@ -423,6 +423,8 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
 
   // TestExpression.scala tests fail when recurRedMul is included inside.
   // So this exists as a seperate entity
+
+  // #TODO Why is lazy val required for reduce and reducePartial?? val doesn't work
 
   lazy val reducePartial: Term = {
     val flatAM = recurFlatten(BinOp("+")).recurFlatten(BinOp("*"))
@@ -434,7 +436,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   // #TODO May be reduce should be written in a recursive way like
   // reducePartial.(recurRedMul.reducePartial)*n reduce until the
   // CompositeTerm no longer simplifies
-  // Changing the order of functions creates error.
+  // Changing the order of functions creates
   lazy val reduce: Term =
     reducePartial.recurRedMul.recurRedNum.reducePartial.recurGroupNeg.recurMinusAbs
 
@@ -470,7 +472,7 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
     diffAcc(this, x, n)
   }
 
-  // #TODO write a special Case unary_-
+  // #TODO Need to write a special Printing module.
   override def formatToString = f match {
     case UnaryOp(op) => op match {
       case "-" => op + args(0)
@@ -495,10 +497,10 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
   // Should think of general rules May be based on Lexicographic Ordering in
   // Some Strange way.
 
-  // #TODO reducePartial to be replaced with reduce when term ordering rules
-  // are written.
+  // #TODO After writing a pretty Printing module Construct a way to initailize
+  // a global variable Which will turn on the pretty Printing by default.
 
-  override def toString = reducePartial.formatToString
+  override def toString = reduce.formatToString
 
   /** Experimenting with `==` Not final yet. */
   // Test 18 passes when there is reduce.reduce on other side

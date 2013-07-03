@@ -5,11 +5,11 @@ import org.scalatest.FunSuite
 
 class Number extends FunSuite {
   val x = Symbol("x")
-  
+
   test("Integer"){                  //OK
     assert(Integer("22")===Integer(22))
     assert(Integer("3455555555".toLong) === Integer("3455555555"))
-    assert(Integer(BigInt("45"*35))===Integer("45"*35))    
+    assert(Integer(BigInt("45"*35))===Integer("45"*35))
     assert(Integer(2)+Integer(3) === Integer(5))
     assert(2+Integer(3) === Integer(5))
     assert(Integer(5)-3===Integer(2))
@@ -21,7 +21,7 @@ class Number extends FunSuite {
     assert(6.diff(x)===Integer(0))
     assert(Integer("34555"*34).diff(x, 23)===Integer(0))
     assert(Integer(6).signum === 1)
-    assert(Integer(6).signum === 1)           
+    assert(Integer(6).signum === 1)
     assert(Integer(-6).signum === -1)
 //    assert(6.signum === 1)
 //    both method intWrapper in class LowPriorityImplicits of type (x: Int)scala.runtime.RichInt
@@ -67,9 +67,9 @@ class Number extends FunSuite {
     assert(Rational(5, 10).signum === 1)
     assert(Rational(-6, 24).signum === -1)
     assert(Rational(5, 10).diff(x) === Integer(0))
-    assert(Rational(6, 24).diff(x, 34) === Integer(0))    
+    assert(Rational(6, 24).diff(x, 34) === Integer(0))
   }
   test("Real"){
-  
+
   }
 }

@@ -128,9 +128,9 @@ class Rational(val arg1: BigInt, val arg2: BigInt = BigInt(1)) extends Number wi
 object Rational {
 
   def apply(a: BigInt, b: BigInt) = {
-    val g = a.gcd(b); 
+    val g = a.gcd(b);
     if ((a>0 && b>0) || (a< 0 && b>0)) new Rational(a/g, b/g)
-    else new Rational(-a/g, -b/g) 
+    else new Rational(-a/g, -b/g)
   }
   def apply(a: BigInt) = new Rational(a)
 
@@ -155,6 +155,7 @@ object Rational {
 }
 
 class Real(val arg1: BigDec) extends Number with Ordered[Real]{
+
   override def equals(that: Any): Boolean = that match {
     case that: Real => (arg1==that.arg1)
     case that: Rational => (that.arg1 == arg1.toBigIntExact) && (that.arg2== BigInt(1))
@@ -172,6 +173,7 @@ class Real(val arg1: BigDec) extends Number with Ordered[Real]{
 }
 
 object Real {
+
   def apply(a: Double) = new Real(BigDec(a))
   def apply(a: Float) = new Real(BigDec(a))
   def apply(a: String) = new Real(BigDec(a))
