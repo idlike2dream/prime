@@ -345,20 +345,18 @@ case class CompositeTerm(f: Function, args: List[Term]) extends Term {
       case BinOp("*") => {
         val (num, terms) = args partition {
           case _:Number => true;case _ => false }
-        def flatNum(l: List[Term], a: Term): Term = l match {
-          case Nil => a;
-          case x :: xs => flatNum(xs, a*x)
-        }
-        CompositeTerm(BinOp("*"), flatNum(num, Integer(1)) :: terms)
+        val number = ((Integer(1): Term) /: num) (_ * _)
+
+        if (number == Integer(1)) CompositeTerm(BinOp("*"), number :: terms)
+        else CompositeTerm(BinOp("*"), number :: terms)
       }
       case BinOp("+") => {
         val (num, terms) = args partition {
           case _:Number => true;case _ => false }
-        def flatNum(l: List[Term], a: Term): Term = l match {
-          case Nil => a;
-          case x :: xs => flatNum(xs, a+x)
-        }
-        CompositeTerm(BinOp("+"), terms++List(flatNum(num, Integer(0))))
+        val number = ((Integer(0): Term) /: num) (_ + _)
+
+        if (number == Integer(0)) CompositeTerm(BinOp("+"), terms)
+        else CompositeTerm(BinOp("+"), terms++List(number))
       }
       case _ => this
     }
