@@ -2,6 +2,16 @@ package prime.core
 
 import scala.math.{BigDecimal => BigDec}
 
+// "I feel the following arrangement is more idiomatic in scala, and will make for better code in the long run:
+// Have case classes (val is automatic):
+//    case class Integer(value: BigInt) extends ...
+//    case class Rational(numer: BigInt, denom: BigInt) extends ...
+//    case class Real(value: BigDec) extends ...
+// And in code, for example for addition
+// def +(that: Number): Number = (this, that) match {
+//		case (Rational(a, b), Rational(c,d)) => Rational(ad + bc, bd)
+// etc.
+
 sealed trait Number extends AtomicTerm {
 
   private def toBigDec(x: BigInt) = BigDec(x.toString)
