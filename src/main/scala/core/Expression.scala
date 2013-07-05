@@ -277,6 +277,7 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   def recurGroupNeg: Term =
     CompositeTerm(f, args map (_.recurGroupNeg)).reduceGroupNeg
 
+  /** Recursively reduces expresstion like this abs(-x) to abs(x) */
   def recurMinusAbs: Term =
     CompositeTerm(f, args map (_.recurMinusAbs)).reduceMinusAbs
 
@@ -336,7 +337,7 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     case _ => this
   }
 
-  /** Rule 0: Simplify numbers with respect to corresponding function
+  /** Rule 0: Simplify numbers with respect to corresponding operator
     * Rule 1: Keep Simplified Number as first term of list in CompositeTerm(BinOp("*"), _)
     * Rule 2: Keep Simplified Number as  last term of list in CompositeTerm(BinOp("+"), _)
     */
@@ -363,8 +364,6 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   }
 
   /** Reduces -(-x) to x */
-  // This is rather wierd Had -x been represented as (-1)*x
-  // Then no need of this function.
   def reduceUnaryNeg: Term = (f, args(0)) match {
     case (UnaryOp("-"), CompositeTerm(UnaryOp("-"), x:: Nil)) => x
     case _ => this
@@ -414,6 +413,7 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   // This doesn't necessarily depend on Ordering because of it's definition.
   // Even a corresponding recur term
 
+  /** Reduces expresstion like this abs(-x) to abs(x) */
   def reduceMinusAbs: Term = (f, args) match {
     case (UnaryOp("abs"), CompositeTerm(UnaryOp("-"), a::Nil)::Nil) => a
     case _ => this
