@@ -2,17 +2,40 @@ package prime.functions
 
 import prime.core._
 
+//  Implementation Details
+//
+//  Function are divided divided under two classification.
+//
+//  1st one (Based on ???)
+//    - ElemementaryFunction, https://en.wikipedia.org/wiki/Elementary_function
+//    - SpecialFunction (erf, gamma, Beta, polygamma, etc., )
+//    - CombinatorialFunction (nCk, nPk, factorial, etc., )
+//
+//  2nd one (Based on number of arguments)
+//    - Univariate
+//    - Bivariate
+//
+//  The 1st classification is necessary because I plan to work on Risch
+//  Algorithm for symbolic Integration. 2nd classification is necessary
+//  Because I have defined several simplification methods like recurFlatten
+//  reduceNumber, recurDelId, etc., inside the trait Term. When it comes to
+//  trait Function, their implementation essentially depends on no. of arguments
+//  of the functions itself. So this will reduce a huge amount of boilerplate.
+
 sealed trait Function extends Term
 
-trait ElemementaryFunction extends Term
+trait ElemementaryFunction extends Function
 
-trait SpecialFunction extends Term
+trait SpecialFunction extends Function
 
-trait CombinatorialFunction extends Term
+trait CombinatorialFunction extends Function
 
-trait Univariate extends Term {
+trait Univariate extends Function {
 
   def arg1: Term
+
+  // This function removes the boilerplate. It's implementation is something like
+  // this def funcApply(t: Term) = Exp(t) inside Exp case class.
 
   def funcApply(t: Term): Term
 
@@ -60,7 +83,7 @@ trait Univariate extends Term {
 
 }
 
-trait Bivariate extends Term {
+trait Bivariate extends Function {
 
   def arg1: Term
   def arg2: Term
