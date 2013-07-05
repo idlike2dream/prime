@@ -2,7 +2,7 @@ package prime.core
 
 sealed trait Expression
 
-abstract class Function(val degree: Int) extends Expression {
+abstract class Operator(val degree: Int) extends Expression {
 
   /** Name of function */
   def op: String
@@ -18,11 +18,11 @@ abstract class Function(val degree: Int) extends Expression {
 
 }
 
-case class BinOp(op: String) extends Function(2)
+case class BinOp(op: String) extends Operator(2)
 
-case class UnaryOp(op: String) extends Function(1)
+case class UnaryOp(op: String) extends Operator(1)
 
-trait Operators {
+trait BasicOperators {
 
   /** Add two terms */
   def +(that: Term): Term
@@ -55,7 +55,7 @@ trait Operators {
   def subs(from: Term, to: Term): Term
 }
 
-trait Term extends Expression with Operators {
+trait Term extends Expression with BasicOperators {
 
   /** Add two terms. If both terms are numbers then gives sum of those two
     * numbers */
@@ -230,7 +230,7 @@ trait AtomicTerm extends Term {
 
 }
 
-case class CompositeTerm(f: Function, args: List[Term]) extends Term {
+case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
 
   /** Recursively substitute `from` with `to` on the CompositeTerm tree
     * structure */
