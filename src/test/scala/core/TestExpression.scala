@@ -64,4 +64,12 @@ class Expression extends FunSuite {
   test("18"){
     assert((-1*x).abs === x)
   }
+  test("19"){
+    assert((1/x).diff(x) === (-1/(x**2)))
+  }
+  test("20"){
+    assert((y/x).diff(x) === (-y/(x**2)))
+    //assert((x/x).diff(x) === Integer(0))
+    //assert((y/x).diff(x) === y*(-1/(x**2)))
+  }
 }

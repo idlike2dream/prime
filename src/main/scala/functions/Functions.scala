@@ -22,6 +22,10 @@ import prime.core._
 //  trait Function, their implementation essentially depends on no. of arguments
 //  of the functions itself. So this will reduce a huge amount of boilerplate.
 
+
+// #TODO have to implement the Differentiation of composition of function using
+// super.diff(x)
+
 sealed trait Function extends Term
 
 trait ElemementaryFunction extends Function
