@@ -458,6 +458,11 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
         case _ => BinOp("diff")(this, x)
       }
     }
+    case BinOp("/") => {
+      val u = args(0); val v = args(1)
+      if (u == Integer(1)) (-(v.diff(x))) / (v**Integer(2))
+      else (v * u.diff(x) -  u * v.diff(x)) / (v**Integer(2))
+    }
     case _ => BinOp("diff")(this, x)
   }
 
