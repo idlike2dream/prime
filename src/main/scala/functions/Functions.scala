@@ -16,8 +16,6 @@ trait Univariate extends Term {
 
   def funcApply(t: Term): Term
 
-////////////////////////////////////////////////////////////////////////////////
-
   def flatten(func: BinOp): Term = funcApply(arg1.flatten(func))
 
   def delId(f: BinOp, id: Term): Term = funcApply(arg1.delId(f, id))
@@ -35,8 +33,6 @@ trait Univariate extends Term {
   def reduceGroupNeg: Term = funcApply(arg1.reduceGroupNeg)
 
   def reduceMinusAbs: Term = funcApply(arg1.reduceMinusAbs)
-
-////////////////////////////////////////////////////////////////////////////////
 
   def recurSubs(from: Term, to: Term): Term = funcApply(arg1.recurSubs(from, to))
 
@@ -58,8 +54,6 @@ trait Univariate extends Term {
 
   def recurMinusAbs: Term = funcApply(arg1.recurMinusAbs)
 
-////////////////////////////////////////////////////////////////////////////////
-
   def reducePartial: Term = funcApply(arg1.reducePartial)
 
   def reduce: Term = funcApply(arg1.reduce)
@@ -72,8 +66,6 @@ trait Bivariate extends Term {
   def arg2: Term
 
   def funcApply(t1: Term, t2: Term): Term
-
-////////////////////////////////////////////////////////////////////////////////
 
   def flatten(func: BinOp): Term =
     funcApply(arg1.flatten(func), arg2.flatten(func))
@@ -95,8 +87,6 @@ trait Bivariate extends Term {
   def reduceGroupNeg: Term = funcApply(arg1.reduceGroupNeg, arg2.reduceGroupNeg)
 
   def reduceMinusAbs: Term = funcApply(arg1.reduceMinusAbs, arg2.reduceMinusAbs)
-
-////////////////////////////////////////////////////////////////////////////////
 
   def recurSubs(from: Term, to: Term): Term =
     funcApply(arg1.recurSubs(from, to), arg2.recurSubs(from, to))
@@ -120,8 +110,6 @@ trait Bivariate extends Term {
   def recurGroupNeg: Term = funcApply(arg1.recurGroupNeg, arg2.recurGroupNeg)
 
   def recurMinusAbs: Term = funcApply(arg1.recurMinusAbs, arg2.recurMinusAbs)
-
-////////////////////////////////////////////////////////////////////////////////
 
   def reducePartial: Term = funcApply(arg1.reducePartial, arg2.reducePartial)
 
