@@ -131,8 +131,6 @@ trait Univariate extends Function {
 
   def cancel: Term = funcApply(arg1.cancel)
 
-  def recCancel: Term = funcApply(arg1.recCancel)
-
   def expandUnaryNeg: Term = funcApply(arg1.expandUnaryNeg)
 
   def recExUnaryNeg: Term = funcApply(arg1.recExUnaryNeg)
@@ -241,8 +239,6 @@ trait Bivariate extends Function {
   def expand: Term = funcApply(arg1.expand, arg2.expand)
 
   def cancel: Term = funcApply(arg1.cancel, arg2.cancel)
-
-  def recCancel: Term = funcApply(arg1.recCancel, arg2.recCancel)
 
   def expandUnaryNeg: Term = funcApply(arg1.expandUnaryNeg, arg2.expandUnaryNeg)
 

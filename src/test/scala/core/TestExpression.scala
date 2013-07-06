@@ -67,14 +67,14 @@ class Expression extends FunSuite {
   test("Division Differentiation"){
     assert((1/x).diff(x) === (-1/(x**2)))
     assert((y/x).diff(x) === (-y/(x**2)))
-    assert((x/x).diff(x).recCancel === Integer(0))
+    assert((x/x).diff(x).cancel === Integer(0))
     //assert((y/x).diff(x) === y*(-1/(x**2)))
   }
   test("Cancel"){
     assert((x-x).cancel === Integer(0))
     assert((x-x+y-y).reducePartial.cancel === Integer(0))
     assert((2*x - 2*x).cancel === Integer(0))
-    assert((x*(y -y)).recCancel === Integer(0))
+    assert((x*(y -y)).cancel === Integer(0))
     assert((x-x+x).reducePartial.cancel === x)
   }
   test("identities of expand"){

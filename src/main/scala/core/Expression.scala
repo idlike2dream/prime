@@ -152,8 +152,6 @@ trait Term extends Expression with BasicOperators {
 
   def cancel: Term
 
-  def recCancel: Term
-
   def expandUnaryNeg: Term
 
   def recExUnaryNeg: Term
@@ -240,9 +238,6 @@ trait AtomicTerm extends Term {
 
   /** Simply returns the atomic term itself*/
   def cancel: Term = this
-
-  /** Simply returns the atomic term itself*/
-  def recCancel: Term = this
 
   /** Simply returns the atomic term itself*/
   def expandUnaryNeg: Term = this
@@ -524,26 +519,34 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     expandRecur(this)
   }
 
-  def cancel: Term = f match {
-    case BinOp("+") => {
-      def cancelAdd(list: List[Term], acc: List[Term]): List[Term] = list match {
-        case Nil => acc match {case Nil => Integer(0) :: Nil ; case _ => acc }
-        case x :: xs => {
-          val negX = CompositeTerm(UnaryOp("-"), x :: Nil)
-          if (xs exists {case `negX` => true; case _ => false}) {
-            val newList = (xs.toBuffer -= negX).toList
-            cancelAdd(newList, acc)
-          }
-          else cancelAdd(xs, acc ++ List(x))
-        }
-      }
-      CompositeTerm(BinOp("+"), cancelAdd(args, Nil))
-    }
-    case _ => this
-  }
+  def cancel: Term = {
 
-  def recCancel: Term =
-    CompositeTerm(f, args map {_.recCancel}).cancel
+    def cancelTerm(x: Term): Term = x match {
+      case CompositeTerm(BinOp("+"), list) => {
+        def cancelAdd(list: List[Term], acc: List[Term]): List[Term] = list match {
+          case Nil => acc match {case Nil => Integer(0) :: Nil ; case _ => acc }
+          case x :: xs => {
+            val negX = CompositeTerm(UnaryOp("-"), x :: Nil)
+            if (xs exists {case `negX` => true; case _ => false}) {
+              val newList = (xs.toBuffer -= negX).toList
+              cancelAdd(newList, acc)
+            }
+            else cancelAdd(xs, acc ++ List(x))
+          }
+        }
+        CompositeTerm(BinOp("+"), cancelAdd(list, Nil))
+      }
+      case _ => x
+    }
+
+    def recCancel(x: Term): Term = x match {
+      case CompositeTerm(func, arg) =>
+        cancelTerm(CompositeTerm(func, arg map {recCancel(_)}))
+      case _ => x
+    }
+
+    recCancel(this)
+  }
 
   def expandUnaryNeg: Term = (f, args) match {
     case (BinOp("-"), CompositeTerm(BinOp("+"), x):: Nil) => {
