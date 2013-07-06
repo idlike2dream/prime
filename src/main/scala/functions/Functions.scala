@@ -127,6 +127,8 @@ trait Univariate extends Function {
 
   def reduce: Term = funcApply(arg1.reduce)
 
+  def expand: Term = funcApply(arg1.expand)
+
   def cancel: Term = funcApply(arg1.cancel)
 
   def recCancel: Term = funcApply(arg1.recCancel)
@@ -235,6 +237,8 @@ trait Bivariate extends Function {
   def reducePartial: Term = funcApply(arg1.reducePartial, arg2.reducePartial)
 
   def reduce: Term = funcApply(arg1.reduce, arg2.reduce)
+
+  def expand: Term = funcApply(arg1.expand, arg2.expand)
 
   def cancel: Term = funcApply(arg1.cancel, arg2.cancel)
 

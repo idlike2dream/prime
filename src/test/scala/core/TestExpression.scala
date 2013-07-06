@@ -64,19 +64,44 @@ class Expression extends FunSuite {
   test("18"){
     assert((-1*x).abs === x)
   }
-  test("19"){
+  test("Division Differentiation"){
     assert((1/x).diff(x) === (-1/(x**2)))
-  }
-  test("20"){
     assert((y/x).diff(x) === (-y/(x**2)))
-    //assert((x/x).diff(x) === Integer(0))
+    assert((x/x).diff(x).recCancel === Integer(0))
     //assert((y/x).diff(x) === y*(-1/(x**2)))
   }
-  test("21"){
+  test("Cancel"){
     assert((x-x).cancel === Integer(0))
     assert((x-x+y-y).reducePartial.cancel === Integer(0))
     assert((2*x - 2*x).cancel === Integer(0))
     assert((x*(y -y)).recCancel === Integer(0))
     assert((x-x+x).reducePartial.cancel === x)
+  }
+  test("identities of expand"){
+    assert((x).expand === x)
+
+    assert((x+y).expand === (x+y))
+
+    assert((x**2).expand.reduce === x**2)
+
+    assert((x*y).expand.reduce === (x*y))
+  }
+  test("expand of Multiply"){
+    assert(((x+y)*(x+y)).expand === (x**2 + 2*x*y + y**2))
+
+    assert(((x+y)*(x+y)*(x+y)).expand === (x*x*x + 3*y*y*x + 3*x*x*y + y*y*y))
+
+    // fails without reduce on both sides And wierdly Why is there a "- 0" in
+    // both sides when reduce is not present on either sides
+    // ((3*x*y**2) + x**3 + y**3 + (3*y*x**2) - 0) did not equal
+    // (x**3 + y**3 + (3*y*x**2) + (3*x*y**2) - 0)
+    assert(((x+y)*(x+y)*(x+y)).expand.reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
+
+    assert(((x+y)*y*z).expand === (x*y*z + y*y*z))
+  }
+  test("expand of power"){
+    assert(((x+y)**2).expand === (x**2 + 2*x*y + y**2))
+
+    assert(((x+y)**3).expand.reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
   }
 }
