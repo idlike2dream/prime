@@ -148,6 +148,14 @@ trait Term extends Expression with BasicOperators {
   def reducePartial: Term
   def reduce: Term
 
+  def cancel: Term
+
+  def recCancel: Term
+
+  def expandUnaryNeg: Term
+
+  def recExUnaryNeg: Term
+
   def formatToString: String
 }
 
@@ -224,6 +232,18 @@ trait AtomicTerm extends Term {
 
   /** Simply returns the atomic term itself */
   def reduce: Term = this
+
+  /** Simply returns the atomic term itself*/
+  def cancel: Term = this
+
+  /** Simply returns the atomic term itself*/
+  def recCancel: Term = this
+
+  /** Simply returns the atomic term itself*/
+  def expandUnaryNeg: Term = this
+
+  /** Simply returns the atomic term itself*/
+  def recExUnaryNeg: Term = this
 
   /** Returns toString of the atomic term. Just added for convinience*/
   def formatToString: String = toString
@@ -437,6 +457,37 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   // Changing the order of functions creates
   lazy val reduce: Term =
     reducePartial.recurRedMul.recurRedNum.reducePartial.recurGroupNeg.recurMinusAbs
+
+  def cancel: Term = f match {
+    case BinOp("+") => {
+      def cancelAdd(list: List[Term], acc: List[Term]): List[Term] = list match {
+        case Nil => acc match {case Nil => Integer(0) :: Nil ; case _ => acc }
+        case x :: xs => {
+          val negX = CompositeTerm(UnaryOp("-"), x :: Nil)
+          if (xs exists {case `negX` => true; case _ => false}) {
+            val newList = (xs.toBuffer -= negX).toList
+            cancelAdd(newList, acc)
+          }
+          else cancelAdd(xs, acc ++ List(x))
+        }
+      }
+      CompositeTerm(BinOp("+"), cancelAdd(args, Nil))
+    }
+    case _ => this
+  }
+
+  def recCancel: Term =
+    CompositeTerm(f, args map {_.recCancel}).cancel
+
+  def expandUnaryNeg: Term = (f, args) match {
+    case (BinOp("-"), CompositeTerm(BinOp("+"), x):: Nil) => {
+      CompositeTerm(BinOp("+"), x map {y => CompositeTerm(UnaryOp("-"), List(y))})
+    }
+    case _ => this
+  }
+
+  def recExUnaryNeg: Term =
+    CompositeTerm(f, args map {_.recExUnaryNeg}).expandUnaryNeg
 
   /** Differentiate the CompositeTerm with respect to an independent variable `x`*/
   // #TODO write cases for operators abs, /

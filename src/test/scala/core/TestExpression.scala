@@ -72,4 +72,11 @@ class Expression extends FunSuite {
     //assert((x/x).diff(x) === Integer(0))
     //assert((y/x).diff(x) === y*(-1/(x**2)))
   }
+  test("21"){
+    assert((x-x).cancel === Integer(0))
+    assert((x-x+y-y).reducePartial.cancel === Integer(0))
+    assert((2*x - 2*x).cancel === Integer(0))
+    assert((x*(y -y)).recCancel === Integer(0))
+    assert((x-x+x).reducePartial.cancel === x)
+  }
 }

@@ -41,7 +41,7 @@ trait Univariate extends Function {
   // This function removes the boilerplate. It's implementation is something like
   // this def funcApply(t: Term) = Exp(t) inside Exp case class.
 
-  def funcApply(t: Term): Term
+  protected def funcApply(t: Term): Term
 
   // Argument Simplification Methods.
 
@@ -126,6 +126,14 @@ trait Univariate extends Function {
   def reducePartial: Term = funcApply(arg1.reducePartial)
 
   def reduce: Term = funcApply(arg1.reduce)
+
+  def cancel: Term = funcApply(arg1.cancel)
+
+  def recCancel: Term = funcApply(arg1.recCancel)
+
+  def expandUnaryNeg: Term = funcApply(arg1.expandUnaryNeg)
+
+  def recExUnaryNeg: Term = funcApply(arg1.recExUnaryNeg)
 
 }
 
@@ -220,11 +228,20 @@ trait Bivariate extends Function {
   /** Recursively reduces f((x-y-z), a) to f((x-(y+z)), a) on the CTS */
   def recurGroupNeg: Term = funcApply(arg1.recurGroupNeg, arg2.recurGroupNeg)
 
-  /** Recursively reduces expresstion like this f(abs(-x), y) to f(abs(x), y) */
+  /** Recursively reduces expresstion like this f(abs(-x), y) to f(abs(x), y)
+    * */
   def recurMinusAbs: Term = funcApply(arg1.recurMinusAbs, arg2.recurMinusAbs)
 
   def reducePartial: Term = funcApply(arg1.reducePartial, arg2.reducePartial)
 
   def reduce: Term = funcApply(arg1.reduce, arg2.reduce)
+
+  def cancel: Term = funcApply(arg1.cancel, arg2.cancel)
+
+  def recCancel: Term = funcApply(arg1.recCancel, arg2.recCancel)
+
+  def expandUnaryNeg: Term = funcApply(arg1.expandUnaryNeg, arg2.expandUnaryNeg)
+
+  def recExUnaryNeg: Term = funcApply(arg1.recExUnaryNeg, arg2.recExUnaryNeg)
 
 }
