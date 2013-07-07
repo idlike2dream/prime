@@ -48,15 +48,15 @@ trait Univariate extends Function {
   // CompositeTerm Tree Structure => CTS
   /** Flattens the argument(CTS) of Function with respect to an associative
     * operator `func` only the top most layer.*/
-  def flatten(func: BinOp): Term = funcApply(arg1.flatten(func))
+  def flatten: Term = funcApply(arg1.flatten)
 
   /** Deletes the identity elements `id` with respect to  the operator `func` on
     * the argument(CTS) of Function */
-  def delId(f: BinOp, id: Term): Term = funcApply(arg1.delId(f, id))
+  def delIdentity: Term = funcApply(arg1.delIdentity)
 
   /** If argument(CTS) of Function is of the form `CompositeTerm(BinOp(_), a::Nil)`
-      then return `a` otherwise the term itself */
-  def reduceToSingle: Term = funcApply(arg1.reduceToSingle)
+    * then return `a` otherwise the term itself */
+  def singleTerm: Term = funcApply(arg1.singleTerm)
 
   /** Reduces the mulitiplicy of the same object in the argument(CTS) of Function
     * for example
@@ -68,7 +68,7 @@ trait Univariate extends Function {
 
   /** Reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)))
     * to f(0) */
-  def reduceMulZero: Term = funcApply(arg1.recurMulZero)
+  def reduceMulZero: Term = funcApply(arg1.reduceMulZero)
 
   /** Rule 0: Simplify numbers with respect to corresponding operator
     * Rule 1: Keep Simplified Number as first term of list in CompositeTerm(BinOp("*"), _)
@@ -76,54 +76,14 @@ trait Univariate extends Function {
     */
   def reduceNumber: Term = funcApply(arg1.reduceNumber)
 
-  /** Reduces f(-(-x)) to f(x) */
-  def reduceUnaryNeg: Term = funcApply(arg1.reduceUnaryNeg)
-
   /** Reduces f(x - y - z) to f(x - (y+z)) and f(x*(-y)*(-z)) = f(x*y*z) */
   def reduceGroupNeg: Term = funcApply(arg1.reduceGroupNeg)
 
   /** Reduces expresstion like this f(abs(-x)) to f(abs(x)) */
   def reduceMinusAbs: Term = funcApply(arg1.reduceMinusAbs)
 
-  /** Recursively substitute `from` with `to` on the argument(CTS) of Function */
-  def recurSubs(from: Term, to: Term): Term = funcApply(arg1.recurSubs(from, to))
-
-  /** Recursively flattens the argument(CTS) of Function with respect to  to
-    * an associative operator `func` */
-  def recurFlatten(f: BinOp): Term = funcApply(arg1.recurFlatten(f))
-
-  /** Recursively deletes the identity elements `id` with respect to  the operator
-    * `func` on the argument(CTS) of Function */
-  def recurDelId(f: BinOp, id: Term): Term = funcApply(arg1.recurDelId(f, id))
-
-  /** Recursively convert `f(CompositeTerm(BinOp(_), a::Nil))` to `f(a)` on the
-    * argument(CTS) of Function */
-  def recurSingle: Term = funcApply(arg1.recurSingle)
-
-  /** Recursively reduces the mulitiplicy of the same object in the argument(CTS)
-    *  of Function using reduceMultiplicity */
-  def recurRedMul: Term = funcApply(arg1.recurRedMul)
-
-  /** Recursively reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)))
-    * to f(0) on the CompositeTerm Tree Structure */
-  def recurMulZero: Term = funcApply(arg1.recurMulZero)
-
-  /** Recursively Reduces the argument(CTS) of Function according to
-    * Rule 0, 1, 2 using reduceNumber */
-  def recurRedNum: Term = funcApply(arg1.recurRedNum)
-
-  /** Recursively Reduces Terms of form f(-(-x)) to f(x) on the argument(CTS) of
-    * Function */
-  def recurUnaryNeg: Term = funcApply(arg1.recurUnaryNeg)
-
-  /** Recursively reduces f(x-y-z) to f(x-(y+z)) on the argument(CTS) of
-    * Function */
-  def recurGroupNeg: Term = funcApply(arg1.recurGroupNeg)
-
-  /** Recursively reduces expresstion like this f(abs(-x)) to f(abs(x)) */
-  def recurMinusAbs: Term = funcApply(arg1.recurMinusAbs)
-
-  def reducePartial: Term = funcApply(arg1.reducePartial)
+  // /** Recursively substitute `from` with `to` on the argument(CTS) of Function */
+  // def recurSubs(from: Term, to: Term): Term = funcApply(arg1.recurSubs(from, to))
 
   def reduce: Term = funcApply(arg1.reduce)
 
@@ -131,10 +91,9 @@ trait Univariate extends Function {
 
   def cancel: Term = funcApply(arg1.cancel)
 
+  def subtract: Term = funcApply(arg1.subtract)
+
   def expandUnaryNeg: Term = funcApply(arg1.expandUnaryNeg)
-
-  def recExUnaryNeg: Term = funcApply(arg1.recExUnaryNeg)
-
 }
 
 trait Bivariate extends Function {
@@ -150,18 +109,18 @@ trait Bivariate extends Function {
   // CompositeTerm Tree Structure => CTS
   /** Flattens the argument(CTS) of Function with respect to an associative
     * operator `func` only the top most layer.*/
-  def flatten(func: BinOp): Term =
-    funcApply(arg1.flatten(func), arg2.flatten(func))
+  def flatten: Term =
+    funcApply(arg1.flatten, arg2.flatten)
 
   /** Deletes the identity elements `id` with respect to  the operator `func` on
     * the argument(CTS) of Function */
-  def delId(f: BinOp, id: Term): Term =
-    funcApply(arg1.delId(f, id), arg2.delId(f, id))
+  def delIdentity: Term =
+    funcApply(arg1.delIdentity, arg2.delIdentity)
 
   /** If argument(CTS) of Function is of the form
     * `f(CompositeTerm(BinOp(_), a::Nil), y)` then return `f(a, y)` otherwise
     * the term itself */
-  def reduceToSingle: Term = funcApply(arg1.reduceToSingle, arg2.reduceToSingle)
+  def singleTerm: Term = funcApply(arg1.singleTerm, arg2.singleTerm)
 
   /** Reduces the mulitiplicy of the same object in the argument(CTS) of Function
     * for example
@@ -174,16 +133,13 @@ trait Bivariate extends Function {
 
   /** Reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)), a)
     * to f(0, a) */
-  def reduceMulZero: Term = funcApply(arg1.recurMulZero, arg2.recurMulZero)
+  def reduceMulZero: Term = funcApply(arg1.reduceMulZero, arg2.reduceMulZero)
 
   /** Rule 0: Simplify numbers with respect to corresponding operator
     * Rule 1: Keep Simplified Number as first term of list in CompositeTerm(BinOp("*"), _)
     * Rule 2: Keep Simplified Number as  last term of list in CompositeTerm(BinOp("+"), _)
     */
   def reduceNumber: Term = funcApply(arg1.reduceNumber, arg2.reduceNumber)
-
-  /** Reduces f(-(-x), y) to f(x, y) */
-  def reduceUnaryNeg: Term = funcApply(arg1.reduceUnaryNeg, arg2.reduceUnaryNeg)
 
   /** Reduces f((x -y-z), a) to f((x - (y+z)), a) and
     * f((x*(-y)*(-z)), a) = f((x*y*z), a) */
@@ -192,47 +148,9 @@ trait Bivariate extends Function {
   /** Reduces expresstion like this f(abs(-x), y) to f(abs(x), y) */
   def reduceMinusAbs: Term = funcApply(arg1.reduceMinusAbs, arg2.reduceMinusAbs)
 
-  /** Recursively substitute `from` with `to` on the argument(CTS) of Function */
-  def recurSubs(from: Term, to: Term): Term =
-    funcApply(arg1.recurSubs(from, to), arg2.recurSubs(from, to))
-
-  /** Recursively flattens the argument(CTS) of Function with respect to  to
-    * an associative operator `func` */
-  def recurFlatten(f: BinOp): Term =
-    funcApply(arg1.recurFlatten(f), arg2.recurFlatten(f))
-
-  /** Recursively deletes the identity elements `id` with respect to  the operator
-    * `func` on the argument(CTS) of Function */
-  def recurDelId(f: BinOp, id: Term): Term =
-    funcApply(arg1.recurDelId(f, id), arg2.recurDelId(f, id))
-
-  /** Recursively convert `f(CompositeTerm(BinOp(_), a::Nil), y)` to `f(a, y)`
-    * on the argument(CTS) of Function */
-  def recurSingle: Term = funcApply(arg1.recurSingle, arg2.recurSingle)
-
-  /** Recursively reduces the mulitiplicy of the same object in the argument(CTS)
-    * of Function using reduceMultiplicity */
-  def recurRedMul: Term = funcApply(arg1.recurRedMul, arg2.recurRedMul)
-
-  /** Recursively reduces the f(CompositeTerm(BinOp("*"), List(...,0,...)), y)
-    * to f(0, y) on the argument(CTS) of Function */
-  def recurMulZero: Term = funcApply(arg1.recurMulZero, arg2.recurMulZero)
-
-  /** Recursively Reduces the argument(CTS) of Function according to
-    * Rule 0, 1, 2 using reduceNumber */
-  def recurRedNum: Term = funcApply(arg1.recurRedNum, arg2.recurRedNum)
-
-  /** Recursively Reduces Terms of form f(-(-x), y) to f(x, y) on the CTS */
-  def recurUnaryNeg: Term = funcApply(arg1.recurUnaryNeg, arg2.recurUnaryNeg)
-
-  /** Recursively reduces f((x-y-z), a) to f((x-(y+z)), a) on the CTS */
-  def recurGroupNeg: Term = funcApply(arg1.recurGroupNeg, arg2.recurGroupNeg)
-
-  /** Recursively reduces expresstion like this f(abs(-x), y) to f(abs(x), y)
-    * */
-  def recurMinusAbs: Term = funcApply(arg1.recurMinusAbs, arg2.recurMinusAbs)
-
-  def reducePartial: Term = funcApply(arg1.reducePartial, arg2.reducePartial)
+  // /** Recursively substitute `from` with `to` on the argument(CTS) of Function */
+  // def recurSubs(from: Term, to: Term): Term =
+  //   funcApply(arg1.recurSubs(from, to), arg2.recurSubs(from, to))
 
   def reduce: Term = funcApply(arg1.reduce, arg2.reduce)
 
@@ -240,8 +158,7 @@ trait Bivariate extends Function {
 
   def cancel: Term = funcApply(arg1.cancel, arg2.cancel)
 
+  def subtract: Term = funcApply(arg1.subtract, arg2.subtract)
+
   def expandUnaryNeg: Term = funcApply(arg1.expandUnaryNeg, arg2.expandUnaryNeg)
-
-  def recExUnaryNeg: Term = funcApply(arg1.recExUnaryNeg, arg2.recExUnaryNeg)
-
 }
