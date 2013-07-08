@@ -127,8 +127,8 @@ trait Term extends Expression with BasicOperators {
   def flatten: Term
   def delIdentity: Term
   def singleTerm: Term
-  def reduceMultiplicity: Term
-  def reduceMulZero: Term
+  def reduceMultiple: Term
+  def mulZero: Term
   def reduceNumber: Term
   def reduceGroupNeg: Term
   def reduceMinusAbs: Term
@@ -163,10 +163,10 @@ trait AtomicTerm extends Term {
   def singleTerm: Term = this
 
   /** Simply returns the atomic term itself */
-  def reduceMultiplicity: Term = this
+  def reduceMultiple: Term = this
 
   /** Simply returns the atomic term itself */
-  def reduceMulZero: Term = this
+  def mulZero: Term = this
 
   /** Simply returns the atomic term itself */
   def reduceNumber: Term = this
@@ -284,17 +284,17 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     *
     * `(x+x+x+x)` is converted to `4*x` and `(x*x*x*x)` is converted to `x**4`
     */
-  def reduceMultiplicity: Term = {
-    def reduceMultiplicityRecur(x: Term): Term = x match {
+  def reduceMultiple: Term = {
+    def reduceMultipleRecur(x: Term): Term = x match {
       case CompositeTerm(BinOp("+"), ar) => {
-        val simpArgs = ar map {reduceMultiplicityRecur(_)}
+        val simpArgs = ar map {reduceMultipleRecur(_)}
         val finalList = simpArgs.groupBy(identity).map{
           case (x,ls) => {val n = ls.size; if(n==1) x else Integer(n)*x}
         }.toList
         CompositeTerm(BinOp("+"), finalList)
       }
       case CompositeTerm(BinOp("*"), ar) => {
-        val simpArgs = ar map {reduceMultiplicityRecur(_)}
+        val simpArgs = ar map {reduceMultipleRecur(_)}
         val finalList = simpArgs.groupBy(identity).map{
           case (x,ls) => {val n = ls.size; if(n==1) x else x**Integer(n)}
         }.toList
@@ -302,15 +302,28 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
       }
       case _ => x
     }
-    reduceMultiplicityRecur(this)
+    reduceMultipleRecur(this)
   }
 
   /** Reduces the CompositeTerm(BinOp("*"), List(..., 0, ...))
     * to Integer(0) or CompositeTerm(BinOp("/"), 0 :: _ :: Nil) to 0  */
-  def reduceMulZero: Term = f match {
-    case BinOp("*") => if (args.exists(_==Integer(0))) Integer(0) else this
-    case BinOp("/") => if (args(0) == Integer(0)) Integer(0) else this
-    case _ => this
+  def mulZero: Term = {
+    def mulZeroRecur(x: Term): Term = x match {
+      case CompositeTerm(BinOp("*"), ar) => {
+        val simpArgs = ar map {mulZeroRecur(_)}
+        if (simpArgs exists (_==Integer(0))) Integer(0) else CompositeTerm(BinOp("*"), simpArgs)
+      }
+      case CompositeTerm(BinOp("/"), ar) => {
+        val simpArgs = ar map {mulZeroRecur(_)}
+        if (simpArgs(0) == Integer(0)) Integer(0) else CompositeTerm(BinOp("/"), simpArgs)
+      }
+      case CompositeTerm(fu, ar) => {
+        val simpArgs = ar map {mulZeroRecur(_)}
+        CompositeTerm(fu, simpArgs)
+      }
+      case _ => x
+    }
+    mulZeroRecur(this)
   }
 
   /** Rule 0: Simplify numbers with respect to corresponding operator
@@ -563,15 +576,9 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   // #TODO After writing a pretty Printing module Construct a way to initailize
   // a global variable Which will turn on the pretty Printing by default.
 
-  override def toString = formatToString
+//  override def toString = formatToString
 
   /** Experimenting with `==` Not final yet. */
-  // Test 18 passes when there is reduce.reduce on other side
-  // #TODO Rework equals definition without reduce so that recursive reduction
-  // is possible But that means ((-1*x).abs == x) and (x*0 == 0) is lost
-  // reduce has to be explicitly mentioned (that sort of equality is lost)
-
-
   override def equals(a: Any) = a match {
     case CompositeTerm(`f`, ar) => (ar.groupBy(identity) == args.groupBy(identity))
     case _ => false

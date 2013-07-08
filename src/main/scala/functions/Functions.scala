@@ -64,11 +64,11 @@ trait Univariate extends Function {
     * `f(x+x+x+x)` is converted to `f(4*x)` and
     * `f(x*x*x*x)` is converted to `f(x**4)`
     */
-  def reduceMultiplicity: Term = funcApply(arg1.reduceMultiplicity)
+  def reduceMultiple: Term = funcApply(arg1.reduceMultiple)
 
   /** Reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)))
     * to f(0) */
-  def reduceMulZero: Term = funcApply(arg1.reduceMulZero)
+  def mulZero: Term = funcApply(arg1.mulZero)
 
   /** Rule 0: Simplify numbers with respect to corresponding operator
     * Rule 1: Keep Simplified Number as first term of list in CompositeTerm(BinOp("*"), _)
@@ -128,12 +128,12 @@ trait Bivariate extends Function {
     * `f(x+x+x+x, y)` is converted to `f(4*x, y)` and
     * `f(x*x*x*x, y)` is converted to `f(x**4, y)`
     */
-  def reduceMultiplicity: Term =
-    funcApply(arg1.reduceMultiplicity, arg2.reduceMultiplicity)
+  def reduceMultiple: Term =
+    funcApply(arg1.reduceMultiple, arg2.reduceMultiple)
 
   /** Reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)), a)
     * to f(0, a) */
-  def reduceMulZero: Term = funcApply(arg1.reduceMulZero, arg2.reduceMulZero)
+  def mulZero: Term = funcApply(arg1.mulZero, arg2.mulZero)
 
   /** Rule 0: Simplify numbers with respect to corresponding operator
     * Rule 1: Keep Simplified Number as first term of list in CompositeTerm(BinOp("*"), _)

@@ -36,8 +36,17 @@ class Expression extends FunSuite {
   }
   test("reduceMultiplicity") {
 
-    assert((x+x+x+y+y+z).flatten.reduceMultiplicity === (3*x + 2*y +z).flatten)
-    assert((x*x*x*y*y*z).flatten.reduceMultiplicity === ((x**3)*(y**2)*z).flatten)
+    assert((x+x+x+y+y+z).flatten.reduceMultiple === (3*x + 2*y +z).flatten)
+    assert((x*x*x*y*y*z).flatten.reduceMultiple === ((x**3)*(y**2)*z).flatten)
+  }
+  test("mulZero"){
+    val a = (x+(y+(y+z)*0))
+    val b = (x*y*(x*(y*0+(z+(x*y*z))*0)))
+
+    assert((x*y*x*x*0).flatten.mulZero === Integer(0))
+    assert(a.flatten.mulZero.delIdentity === (x+y))
+    assert((0/x).mulZero === Integer(0))
+    assert(b.flatten.mulZero.delIdentity.singleTerm.mulZero === Integer(0))
   }
 
 
@@ -59,7 +68,7 @@ class Expression extends FunSuite {
 
    assert((x+y).expand === (x+y))
 
-   assert((x**2).expand.reduceMultiplicity.delIdentity.singleTerm === x**2)
+   assert((x**2).expand.reduceMultiple.delIdentity.singleTerm === x**2)
 
    assert((x*y).expand.delIdentity.singleTerm === (x*y))
  }
