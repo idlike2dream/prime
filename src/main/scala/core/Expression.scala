@@ -133,6 +133,7 @@ trait Term extends Expression with BasicOperators {
   def groupNegative: Term
   def minusAbs: Term
   def expandUnaryNeg: Term
+  def groupDivide: Term
 
   def reduce: Term
   def expand: Term
@@ -176,6 +177,9 @@ trait AtomicTerm extends Term {
 
   /** Simply returns the atomic term itself */
   def minusAbs: Term = this
+
+  /** Simply returns the atomic term itself */
+  def groupDivide: Term = this
 
   /** Simply returns the atomic term itself */
   def reduce: Term = this
@@ -246,24 +250,15 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
 
   /** If CompositeTerm is of the form `CompositeTerm(BinOp(_), a::Nil)` then
     return `a` otherwise the term itself */
-  def singleTerm: Term = {
-    def singleReturn(func: BinOp, ar: List[Term], x: Term): Term = {
-      val simpArgs = ar map {singleTermRecur(_)}
-      simpArgs match {
-        case a :: Nil => a
-        case _ => CompositeTerm(func, simpArgs)
-      }
+  def singleTerm: Term = (f, args map {_.singleTerm}) match {
+    case (BinOp("+"), x :: Nil) => x
+    case (BinOp("*"), x :: Nil) => x
+    case (UnaryOp("-"), CompositeTerm(BinOp("+"), x :: Nil) :: Nil) =>
+      CompositeTerm(UnaryOp("-"), x :: Nil)
+    case (UnaryOp("-"), a :: Nil) => {
+      if (a == Integer(0)) Integer(0) else CompositeTerm(UnaryOp("-"), a :: Nil)
     }
-    def singleTermRecur(x: Term): Term = x match {
-      case CompositeTerm(BinOp("+"), ar) => singleReturn(BinOp("+"), ar, x)
-      case CompositeTerm(BinOp("*"), ar) => singleReturn(BinOp("*"), ar, x)
-      case CompositeTerm(UnaryOp("-"), a :: Nil) => {
-        if (a == Integer(0)) Integer(0) else x
-      }
-      case CompositeTerm(fu, ar) => CompositeTerm(fu, ar map {singleTermRecur(_)})
-      case _ => x
-    }
-    singleTermRecur(this)
+    case (fu, ar) => CompositeTerm(fu, ar)
   }
 
   /** Reduces the mulitiplicy of the same object in the CompositeTerm tree Structure
@@ -315,8 +310,12 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
       val (num, terms) = ar partition {
         case _:Number => true;case _ => false }
       val number = ((Integer(0): Term) /: num) (_ + _)
-      if (number == Integer(0)) CompositeTerm(BinOp("+"), terms)
-      else CompositeTerm(BinOp("+"), terms++List(number))
+      terms match {
+        case Nil => number
+        case _ =>
+          if (number == Integer(0)) CompositeTerm(BinOp("+"), terms)
+          else CompositeTerm(BinOp("+"), terms++List(number))
+      }
     }
     case (fu, ar) => CompositeTerm(fu, ar)
   }
@@ -381,12 +380,37 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     case (_, ar) => CompositeTerm(f, ar)
   }
 
+  def groupDivide: Term = (f, args map {_.groupDivide}) match {
+    case (BinOp("*"), ar) => {
+      if (ar exists {case CompositeTerm(BinOp("/"), _)=>true; case _=>false}) {
+        val (div, rest) = {
+          def cmp(a: List[Term], b: List[CompositeTerm], c: List[Term]): (List[CompositeTerm], List[Term]) = a match {
+            case Nil => (b, c)
+            case (x @ CompositeTerm(BinOp("/"), _)) :: xs => cmp(xs, b ++ List(x), c)
+            case x :: xs => cmp(xs, b, c++List(x))
+          }
+          cmp(ar, Nil, Nil)
+        }
+        def multdiv(x: CompositeTerm, y: CompositeTerm): CompositeTerm =
+          CompositeTerm(BinOp("/"), x.args(0)*y.args(0) :: x.args(1)*y.args(1) :: Nil)
+        val one = CompositeTerm(BinOp("/"), List(Integer(1), Integer(1)))
+        val divTerm = (one /: div) (multdiv(_, _))
+        val num = (divTerm.args(0) /: rest) (_ * _)
+        val dnum = divTerm.args(1)
+        CompositeTerm(BinOp("/"), num :: dnum :: Nil)
+      }
+      else CompositeTerm(f, ar)
+    }
+    case (_, ar) => CompositeTerm(f, ar)
+  }
+
+
   lazy val reduce: Term = {
     def reduceOne(prev: Term, after: Term): Term =
       if (prev == after) after
       else {
-        val next1 = after.flatten.delIdentity.singleTerm.reduceNumber.mulZero
-        val next = next1.groupMultiple.groupNegative
+        val next1 = after.flatten.delIdentity.reduceNumber.singleTerm.mulZero.cancel
+        val next = next1.groupMultiple.groupNegative.groupDivide
         reduceOne(after, next)
       }
     reduceOne(Integer(0), this)
@@ -450,33 +474,76 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     expandRecur(this)
   }
 
-  def cancel: Term = {
-    def cancelTerm(x: Term): Term = x match {
-      case CompositeTerm(BinOp("+"), list) => {
-        def cancelAdd(list: List[Term], acc: List[Term]): List[Term] = list match {
-          case Nil => acc match {case Nil => Integer(0) :: Nil ; case _ => acc }
-          case x :: xs => {
-            val negX = CompositeTerm(UnaryOp("-"), x :: Nil)
-            if (xs exists {case `negX` => true; case _ => false}) {
-              val newList = (xs.toBuffer -= negX).toList
-              cancelAdd(newList, acc)
-            }
-            else cancelAdd(xs, acc ++ List(x))
+  def cancel: Term = (f, args map {_.cancel}) match {
+    case (BinOp("+"), ar) => {
+      def cancelAdd(list: List[Term], acc: List[Term]): List[Term] = list match {
+        case Nil => acc match {case Nil => Integer(0) :: Nil ; case _ => acc }
+        case x :: xs => {
+          val negX = CompositeTerm(UnaryOp("-"), x :: Nil)
+          if (xs exists {case `negX` => true; case _ => false}) {
+            val newList = (xs.toBuffer -= negX).toList
+            cancelAdd(newList, acc)
+          }
+          else cancelAdd(xs, acc ++ List(x))
+        }
+      }
+      CompositeTerm(BinOp("+"), cancelAdd(ar, Nil))
+    }
+    case (BinOp("/"), List(CompositeTerm(BinOp("*"), a1), CompositeTerm(BinOp("*"), a2))) => {
+      def cancelDiv(n: List[Term], d: List[Term], num: List[Term]): Term = (n, d) match {
+        case (Nil, Nil) => num match {
+          case Nil => Integer(1)
+          case x :: Nil => x
+          case _ => CompositeTerm(BinOp("*"), num)
+        }
+        case (Nil, _) => {
+          val ctD = CompositeTerm(BinOp("*"), d)
+          num match {
+            case Nil => CompositeTerm(BinOp("/"), Integer(1) :: ctD:: Nil)
+            case _ => CompositeTerm(BinOp("/"), CompositeTerm(BinOp("*"), num) :: ctD :: Nil)
           }
         }
-        CompositeTerm(BinOp("+"), cancelAdd(list, Nil))
+        case (_, Nil) => num match {
+          case Nil => CompositeTerm(BinOp("*"), n)
+          case _ => CompositeTerm(BinOp("*"), num ++ n)
+        }
+        case (_, _) => {
+          if (d exists {x => if(x == n.head) true else false}) {
+            val newD = (d.toBuffer -= n.head).toList
+            cancelDiv(n.tail, newD, num)
+          }
+          else cancelDiv(n.tail, d, num ++ List(n.head))
+        }
       }
-      case _ => x
+      cancelDiv(a1, a2, Nil)
     }
-
-    def recCancel(x: Term): Term = x match {
-      case CompositeTerm(func, arg) =>
-        cancelTerm(CompositeTerm(func, arg map {recCancel(_)}))
-      case _ => x
+    case (BinOp("/"), ar@ List(a1, CompositeTerm(BinOp("*"), a2))) => {
+      if (a2 exists {_ == a1}) {
+        (a2.toBuffer -= a1).toList match {
+          case Nil => Integer(1)
+          case x :: Nil => Integer(1)/ x
+          case xs => Integer(1) / CompositeTerm(BinOp("*"), xs)
+        }
+      }
+      else CompositeTerm(BinOp("/"), ar)
     }
-
-    recCancel(this)
+    case (BinOp("/"), ar@ List(CompositeTerm(BinOp("*"), a1), a2)) => {
+      if (a1 exists {_ == a2}) {
+        (a1.toBuffer -= a2).toList match {
+          case Nil => Integer(1)
+          case x :: Nil => x
+          case xs => Integer(1) / CompositeTerm(BinOp("*"), xs)
+        }
+      }
+      else CompositeTerm(BinOp("/"), ar)
+    }
+    case (BinOp("/"), a1 :: a2 :: Nil) => {
+      if (a1 == a2) Integer(1)
+      else CompositeTerm(BinOp("/"), a1 :: a2 :: Nil)
+    }
+    case (_, ar) => CompositeTerm(f, ar)
   }
+
 
   def subtract: Term = this
 
@@ -552,7 +619,7 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   // #TODO After writing a pretty Printing module Construct a way to initailize
   // a global variable Which will turn on the pretty Printing by default.
 
-  override def toString = reduce.formatToString
+  override def toString = formatToString
 
   /** Experimenting with `==` Not final yet. */
   override def equals(a: Any) = a match {

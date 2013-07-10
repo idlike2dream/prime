@@ -82,6 +82,8 @@ trait Univariate extends Function {
   /** Reduces expresstion like this f(abs(-x)) to f(abs(x)) */
   def minusAbs: Term = funcApply(arg1.minusAbs)
 
+  def groupDivide: Term = funcApply(arg1.groupDivide)
+
   // /** Recursively substitute `from` with `to` on the argument(CTS) of Function */
   // def recurSubs(from: Term, to: Term): Term = funcApply(arg1.recurSubs(from, to))
 
@@ -147,6 +149,8 @@ trait Bivariate extends Function {
 
   /** Reduces expresstion like this f(abs(-x), y) to f(abs(x), y) */
   def minusAbs: Term = funcApply(arg1.minusAbs, arg2.minusAbs)
+
+  def groupDivide: Term = funcApply(arg1.groupDivide, arg2.groupDivide)
 
   // /** Recursively substitute `from` with `to` on the argument(CTS) of Function */
   // def recurSubs(from: Term, to: Term): Term =
