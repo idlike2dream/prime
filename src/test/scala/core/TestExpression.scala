@@ -36,8 +36,8 @@ class Expression extends FunSuite {
   }
   test("reduceMultiplicity") {
 
-    assert((x+x+x+y+y+z).flatten.reduceMultiple === (3*x + 2*y +z).flatten)
-    assert((x*x*x*y*y*z).flatten.reduceMultiple === ((x**3)*(y**2)*z).flatten)
+    assert((x+x+x+y+y+z).flatten.groupMultiple === (3*x + 2*y +z).flatten)
+    assert((x*x*x*y*y*z).flatten.groupMultiple === ((x**3)*(y**2)*z).flatten)
   }
   test("mulZero"){
     val a = (x+(y+(y+z)*0))
@@ -48,7 +48,53 @@ class Expression extends FunSuite {
     assert((0/x).mulZero === Integer(0))
     assert(b.flatten.mulZero.delIdentity.singleTerm.mulZero === Integer(0))
   }
+  test("reduceNumber"){
+    assert((x+1+1+1).flatten.reduceNumber.toString === "(x + 3)")
+    assert((x*3*4*1).flatten.reduceNumber.toString === "(12*x)")
+  }
+  test("groupNegative"){
+    assert((x-y-z).flatten.groupNegative.toString === "(x - (y + z))")
+    assert((x*(-y)*(-z)).flatten.groupNegative === (x*y*z).flatten)
+  }
+  test("reduce"){
+    val a1 = (x+(y+(y+z)))
+    val a2 = (x*y*(x*(y+(z+(x*y*z)))))
 
+    assert((x*(y*z)).reduce === (x*y*z).reduce)
+    assert(a1.reduce === (x+y+y+z).reduce)
+    assert(a2.reduce === (x*y*x*(y + z + (x*y*z))).reduce)
+
+    val a3 = (0+(0+(0+x)))
+    val a4 = (y*1*(1*(0+(0+(1*1*x)))))
+
+    assert(a3.reduce === (x+0).reduce)
+    assert(a4.reduce === (y*(0 + (x*1))).reduce)
+    assert((x/1).reduce === x)
+    assert((-(-x)).reduce === x)
+
+    val a5 = (0+(0+(0+x))).reduce
+    val a6 = (y*1*(1*(0+(0+(1*1*x))))).reduce
+
+    assert(a5 === x)
+    assert(a6 === x*y)
+
+    assert((x+x+x+y+y+z).reduce === (3*x + 2*y +z).reduce)
+    assert((x*x*x*y*y*z).reduce === ((x**3)*(y**2)*z).reduce)
+
+    val a7 = (x+(y+(y+z)*0))
+    val a8 = (x*y*(x*(y*0+(z+(x*y*z))*0)))
+
+    assert((x*y*x*x*0).reduce === Integer(0))
+    assert(a7.reduce === (x+y))
+    assert((0/x).reduce === Integer(0))
+    assert(a8.reduce === Integer(0))
+
+    assert((x+1+1+1).toString === "(x + 3)")
+    assert((x*3*4*1).toString === "(12*x)")
+
+    assert((x-y-z).flatten.groupNegative.toString === "(x - (y + z))")
+    assert((x*(-y)*(-z)).flatten.groupNegative === (x*y*z).flatten)
+}
 
  // test("Division Differentiation"){
  //   assert((1/x).diff(x) === (-1/(x**2)))
@@ -68,7 +114,7 @@ class Expression extends FunSuite {
 
    assert((x+y).expand === (x+y))
 
-   assert((x**2).expand.reduceMultiple.delIdentity.singleTerm === x**2)
+   assert((x**2).expand.groupMultiple.delIdentity.singleTerm === x**2)
 
    assert((x*y).expand.delIdentity.singleTerm === (x*y))
  }

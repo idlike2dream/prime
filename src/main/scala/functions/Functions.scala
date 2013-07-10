@@ -64,7 +64,7 @@ trait Univariate extends Function {
     * `f(x+x+x+x)` is converted to `f(4*x)` and
     * `f(x*x*x*x)` is converted to `f(x**4)`
     */
-  def reduceMultiple: Term = funcApply(arg1.reduceMultiple)
+  def groupMultiple: Term = funcApply(arg1.groupMultiple)
 
   /** Reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)))
     * to f(0) */
@@ -77,10 +77,10 @@ trait Univariate extends Function {
   def reduceNumber: Term = funcApply(arg1.reduceNumber)
 
   /** Reduces f(x - y - z) to f(x - (y+z)) and f(x*(-y)*(-z)) = f(x*y*z) */
-  def reduceGroupNeg: Term = funcApply(arg1.reduceGroupNeg)
+  def groupNegative: Term = funcApply(arg1.groupNegative)
 
   /** Reduces expresstion like this f(abs(-x)) to f(abs(x)) */
-  def reduceMinusAbs: Term = funcApply(arg1.reduceMinusAbs)
+  def minusAbs: Term = funcApply(arg1.minusAbs)
 
   // /** Recursively substitute `from` with `to` on the argument(CTS) of Function */
   // def recurSubs(from: Term, to: Term): Term = funcApply(arg1.recurSubs(from, to))
@@ -128,8 +128,8 @@ trait Bivariate extends Function {
     * `f(x+x+x+x, y)` is converted to `f(4*x, y)` and
     * `f(x*x*x*x, y)` is converted to `f(x**4, y)`
     */
-  def reduceMultiple: Term =
-    funcApply(arg1.reduceMultiple, arg2.reduceMultiple)
+  def groupMultiple: Term =
+    funcApply(arg1.groupMultiple, arg2.groupMultiple)
 
   /** Reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)), a)
     * to f(0, a) */
@@ -143,10 +143,10 @@ trait Bivariate extends Function {
 
   /** Reduces f((x -y-z), a) to f((x - (y+z)), a) and
     * f((x*(-y)*(-z)), a) = f((x*y*z), a) */
-  def reduceGroupNeg: Term = funcApply(arg1.reduceGroupNeg, arg2.reduceGroupNeg)
+  def groupNegative: Term = funcApply(arg1.groupNegative, arg2.groupNegative)
 
   /** Reduces expresstion like this f(abs(-x), y) to f(abs(x), y) */
-  def reduceMinusAbs: Term = funcApply(arg1.reduceMinusAbs, arg2.reduceMinusAbs)
+  def minusAbs: Term = funcApply(arg1.minusAbs, arg2.minusAbs)
 
   // /** Recursively substitute `from` with `to` on the argument(CTS) of Function */
   // def recurSubs(from: Term, to: Term): Term =
