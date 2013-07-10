@@ -56,7 +56,7 @@ trait Univariate extends Function {
 
   /** If argument(CTS) of Function is of the form `CompositeTerm(BinOp(_), a::Nil)`
     * then return `a` otherwise the term itself */
-  def singleTerm: Term = funcApply(arg1.singleTerm)
+  def simplifyTerm: Term = funcApply(arg1.simplifyTerm)
 
   /** Reduces the mulitiplicy of the same object in the argument(CTS) of Function
     * for example
@@ -122,7 +122,7 @@ trait Bivariate extends Function {
   /** If argument(CTS) of Function is of the form
     * `f(CompositeTerm(BinOp(_), a::Nil), y)` then return `f(a, y)` otherwise
     * the term itself */
-  def singleTerm: Term = funcApply(arg1.singleTerm, arg2.singleTerm)
+  def simplifyTerm: Term = funcApply(arg1.simplifyTerm, arg2.simplifyTerm)
 
   /** Reduces the mulitiplicy of the same object in the argument(CTS) of Function
     * for example

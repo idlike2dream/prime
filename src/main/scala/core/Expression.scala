@@ -126,7 +126,7 @@ trait Term extends Expression with BasicOperators {
 
   def flatten: Term
   def delIdentity: Term
-  def singleTerm: Term
+  def simplifyTerm: Term
   def groupMultiple: Term
   def mulZero: Term
   def reduceNumber: Term
@@ -161,7 +161,7 @@ trait AtomicTerm extends Term {
   def delIdentity: Term = this
 
   /** Simply returns the atomic term itself */
-  def singleTerm: Term = this
+  def simplifyTerm: Term = this
 
   /** Simply returns the atomic term itself */
   def groupMultiple: Term = this
@@ -250,13 +250,22 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
 
   /** If CompositeTerm is of the form `CompositeTerm(BinOp(_), a::Nil)` then
     return `a` otherwise the term itself */
-  def singleTerm: Term = (f, args map {_.singleTerm}) match {
+  def simplifyTerm: Term = (f, args map {_.simplifyTerm}) match {
     case (BinOp("+"), x :: Nil) => x
     case (BinOp("*"), x :: Nil) => x
     case (UnaryOp("-"), CompositeTerm(BinOp("+"), x :: Nil) :: Nil) =>
       CompositeTerm(UnaryOp("-"), x :: Nil)
     case (UnaryOp("-"), a :: Nil) => {
       if (a == Integer(0)) Integer(0) else CompositeTerm(UnaryOp("-"), a :: Nil)
+    }
+    case (BinOp("/"), List(CompositeTerm(BinOp("/"), a1), CompositeTerm(BinOp("/"), a2))) => {
+      CompositeTerm(BinOp("/"), a1(0) * a2(1) :: a1(1) * a2(0) :: Nil)
+    }
+    case (BinOp("/"), List(CompositeTerm(BinOp("/"), a1), a2)) => {
+      CompositeTerm(BinOp("/"), a1(0) :: a2 * a1(1) :: Nil)
+    }
+    case (BinOp("/"), List(a1, CompositeTerm(BinOp("/"), a2))) => {
+      CompositeTerm(BinOp("/"), a1 * a2(1) :: a2(0) :: Nil)
     }
     case (fu, ar) => CompositeTerm(fu, ar)
   }
@@ -409,7 +418,7 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     def reduceOne(prev: Term, after: Term): Term =
       if (prev == after) after
       else {
-        val next1 = after.flatten.delIdentity.reduceNumber.singleTerm.mulZero.cancel
+        val next1 = after.flatten.delIdentity.reduceNumber.simplifyTerm.mulZero.cancel
         val next = next1.groupMultiple.groupNegative.groupDivide
         reduceOne(after, next)
       }
