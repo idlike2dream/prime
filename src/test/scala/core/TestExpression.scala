@@ -109,8 +109,20 @@ class Expression extends FunSuite {
    // assert((x*(y -y)).cancel === Integer(0))
     assert((x-x+x).reduce === x)
     assert((x - (x - x + (x + x -x ))).reduce === Integer(0))
+  }
 
-}
+  test("addsub"){
+    assert((x+5*x).add.simplifyTerm === 6*x)
+    assert((x - y + 3*x + 4*y + x - 3*x + x*y).flatten.add ===  (x*y + 2*x + 3*y).flatten)
+    assert((x+y+z).flatten.add === (x + y + z).flatten)
+    assert(x*(x+x+3*x).flatten.add.simplifyTerm === 5*x*x)
+    assert((x-x).add.simplifyTerm === Integer(0))
+    assert((x-x+y-y).flatten.add.simplifyTerm === Integer(0))
+    assert((2*x - 2*x).add.simplifyTerm === Integer(0))
+    assert((x*(y -y)).add.simplifyTerm.mulZero === Integer(0))
+    assert((x-x+x).flatten.add.simplifyTerm === x)
+    assert((x - (x - x + (x + x -x ))).flatten.add.simplifyTerm.add.simplifyTerm === Integer(0))
+  }
 
  // test("Division Differentiation"){
  //   assert((1/x).diff(x) === (-1/(x**2)))
@@ -118,11 +130,12 @@ class Expression extends FunSuite {
  //   assert((x/x).diff(x).cancel === Integer(0))
  //   //assert((y/x).diff(x) === y*(-1/(x**2)))
  // }
+
  test("Cancel"){
-   assert((x-x).cancel.simplifyTerm === Integer(0))
+    assert((x-x).cancel.simplifyTerm === Integer(0))
     assert((x-x+y-y).flatten.cancel.simplifyTerm === Integer(0))
     assert((2*x - 2*x).cancel.simplifyTerm === Integer(0))
-   // assert((x*(y -y)).cancel === Integer(0))
+    assert((x*(y -y)).cancel.simplifyTerm.mulZero === Integer(0))
     assert((x-x+x).flatten.cancel.simplifyTerm === x)
     assert((x - (x - x + (x + x -x ))).flatten.cancel.simplifyTerm.cancel.simplifyTerm === Integer(0))
     assert((x/x).cancel === Integer(1))

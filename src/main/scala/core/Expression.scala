@@ -138,7 +138,7 @@ trait Term extends Expression with BasicOperators {
   def reduce: Term
   def expand: Term
   def cancel: Term
-  def subtract: Term
+  def add: Term
 
   def formatToString: String
 }
@@ -191,7 +191,7 @@ trait AtomicTerm extends Term {
   def cancel: Term = this
 
   /** Simply returns the atomic term itself*/
-  def subtract: Term = this
+  def add: Term = this
 
   /** Simply returns the atomic term itself*/
   def expandUnaryNeg: Term = this
@@ -553,8 +553,60 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     case (_, ar) => CompositeTerm(f, ar)
   }
 
-
-  def subtract: Term = this
+  def add: Term = (f, args map {_.add}) match {
+    case (BinOp("+"), ar) => {
+      def addTerm(x: Term, terms: List[Term], n: Number, rest: List[Term]): (Number, List[Term]) = terms match {
+        case Nil =>  (n, rest)
+        case CompositeTerm(BinOp("*"), (m: Number):: `x` :: Nil) :: xs => {
+          addTerm(x, xs, n + m, rest)
+        }
+        case CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("*"),  (m: Number):: `x` :: Nil) :: Nil) :: xs => {
+          addTerm(x, xs, n - m, rest)
+        }
+        case CompositeTerm(UnaryOp("-"), `x` :: Nil) :: xs => {
+          addTerm(x, xs, n - Integer(1), rest)
+        }
+        case `x` :: xs => {
+          addTerm(x, xs, n + Integer(1), rest)
+        }
+        case y :: xs => {
+          addTerm(x, xs, n, rest ++ List(y))
+        }
+      }
+      def addList(terms: List[Term], result: List[Term]): Term = terms match {
+        case Nil => result match {
+          case Nil => Integer(0)
+          case _ => CompositeTerm(BinOp("+"), result)
+        }
+        case CompositeTerm(BinOp("*"), (m: Number):: x :: Nil) :: xs => {
+          val (n, rest) = addTerm(x, xs, m, Nil)
+          if (n == Integer(1)) addList(rest, result ++ List(x))
+          else if (n == Integer(0)) addList(rest, result)
+          else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x :: Nil)))
+        }
+        case CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("*"),  (m: Number):: x :: Nil) :: Nil) :: xs => {
+          val (n, rest) = addTerm(x, xs, -m, Nil)
+          if (n == Integer(1)) addList(rest, result ++ List(x))
+          else if (n == Integer(0)) addList(rest, result)
+          else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x :: Nil)))
+        }
+        case CompositeTerm(UnaryOp("-"), x :: Nil) :: xs => {
+          val (n, rest) = addTerm(x, xs, Integer(-1), Nil)
+          if (n == Integer(1)) addList(rest, result ++ List(x))
+          else if (n == Integer(0)) addList(rest, result)
+          else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x :: Nil)))
+        }
+        case x :: xs => {
+          val (n, rest) = addTerm(x, xs, Integer(1), Nil)
+          if (n == Integer(1)) addList(rest, result ++ List(x))
+          else if (n == Integer(0)) addList(rest, result)
+          else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x :: Nil)))
+        }
+      }
+      addList(ar, Nil)
+    }
+    case (_, ar) => CompositeTerm(f, ar)
+  }
 
   def expandUnaryNeg: Term = (f, args map {_.expandUnaryNeg}) match {
     case (UnaryOp("-"), CompositeTerm(BinOp("+"), x):: Nil) => {
