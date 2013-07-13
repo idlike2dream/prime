@@ -95,7 +95,6 @@ trait Univariate extends Function {
 
   def add: Term = funcApply(arg1.add)
 
-  def expandUnaryNeg: Term = funcApply(arg1.expandUnaryNeg)
 }
 
 trait Bivariate extends Function {
@@ -164,5 +163,4 @@ trait Bivariate extends Function {
 
   def add: Term = funcApply(arg1.add, arg2.add)
 
-  def expandUnaryNeg: Term = funcApply(arg1.expandUnaryNeg, arg2.expandUnaryNeg)
 }

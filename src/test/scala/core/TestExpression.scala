@@ -118,6 +118,7 @@ class Expression extends FunSuite {
     assert(x*(x+x+3*x).flatten.add.simplifyTerm === 5*x*x)
     assert((x-x).add.simplifyTerm === Integer(0))
     assert((x-x+y-y).flatten.add.simplifyTerm === Integer(0))
+    assert((-(x+y+z) + z + y).flatten.add.groupNegative.simplifyTerm === -x )
     assert((2*x - 2*x).add.simplifyTerm === Integer(0))
     assert((x*(y -y)).add.simplifyTerm.mulZero === Integer(0))
     assert((x-x+x).flatten.add.simplifyTerm === x)

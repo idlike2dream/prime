@@ -132,7 +132,6 @@ trait Term extends Expression with BasicOperators {
   def reduceNumber: Term
   def groupNegative: Term
   def minusAbs: Term
-  def expandUnaryNeg: Term
   def groupDivide: Term
 
   def reduce: Term
@@ -192,9 +191,6 @@ trait AtomicTerm extends Term {
 
   /** Simply returns the atomic term itself*/
   def add: Term = this
-
-  /** Simply returns the atomic term itself*/
-  def expandUnaryNeg: Term = this
 
   /** Returns toString of the atomic term. Just added for convinience*/
   def formatToString: String = toString
@@ -590,6 +586,10 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
           else if (n == Integer(0)) addList(rest, result)
           else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x :: Nil)))
         }
+        case CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("+"), x) :: Nil) :: xs => {
+          val unaryList = x map {y => CompositeTerm(UnaryOp("-"), List(y))}
+          addList(unaryList++xs, result)
+        }
         case CompositeTerm(UnaryOp("-"), x :: Nil) :: xs => {
           val (n, rest) = addTerm(x, xs, Integer(-1), Nil)
           if (n == Integer(1)) addList(rest, result ++ List(x))
@@ -604,13 +604,6 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
         }
       }
       addList(ar, Nil)
-    }
-    case (_, ar) => CompositeTerm(f, ar)
-  }
-
-  def expandUnaryNeg: Term = (f, args map {_.expandUnaryNeg}) match {
-    case (UnaryOp("-"), CompositeTerm(BinOp("+"), x):: Nil) => {
-      CompositeTerm(BinOp("+"), x map {y => CompositeTerm(UnaryOp("-"), List(y))})
     }
     case (_, ar) => CompositeTerm(f, ar)
   }
@@ -687,7 +680,6 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     case CompositeTerm(`f`, ar) => (ar.groupBy(identity) == args.groupBy(identity))
     case _ => false
   }
-
 
 }
 
