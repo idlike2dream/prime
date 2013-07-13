@@ -114,6 +114,8 @@ class Expression extends FunSuite {
     assert((-(x+y+z) + z + y).reduce === -x )
     assert((2*x - 2*x).reduce === Integer(0))
     assert((x*(y -y)).reduce === Integer(0))
+    assert((x*y + y*x).reduce === (2*x*y).flatten)
+    assert((x*y*z + 3*y*x*z).reduce === (4*x*y*z).flatten)
     assert((x-x+x).reduce === x)
     assert((x - (x - x + (x + x -x ))).reduce === Integer(0))
     assert((x**3**2).reduce == x**6)
@@ -170,13 +172,5 @@ class Expression extends FunSuite {
     assert(((x+y)**2).expand.reduce === (x**2 + 2*x*y + y**2).reduce)
 
     assert(((x+y)**3).expand.reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
-  }
-  test("rogue"){
-    assert(((x/y)*(x/z)).reduce === (x**2)/(y*z))
-    assert((x-x+x).reduce === x)
-    assert((x - y + 3*x + 4*y + x - 3*x + x*y).reduce.simplifyTerm ===  (x*y + 2*x + 3*y).flatten)
-    assert((-(x+y+z) + z + y).reduce === -x)
-    assert((x*y*(y**2/z)).reduce === ((x*(y**3))/z).flatten)
-    assert(((x**2/y)*(y**2/z)*(z**2/x)).reduce === (x*y*z).flatten)
   }
 }

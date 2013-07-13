@@ -572,11 +572,35 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
       case CompositeTerm(UnaryOp("-"), `x` :: Nil) :: xs => {
         addTerm(x, xs, n - Integer(1), rest)
       }
-      case `x` :: xs => {
-        addTerm(x, xs, n + Integer(1), rest)
+      case y :: xs => {
+        if (x == y) addTerm(x, xs, n+Integer(1), rest)
+        else addTerm(x, xs, n, rest ++ List(y))
+      }
+    }
+    def addTermList(x: List[Term], terms: List[Term], n: Number, rest: List[Term]): (Number, List[Term]) = terms match {
+      case Nil =>  (n, rest)
+      case (a@ CompositeTerm(BinOp("*"), (m: Number):: y)) :: xs => {
+        if (CompositeTerm(BinOp("*"), y) == CompositeTerm(BinOp("*"), x))
+          addTermList(x, xs, n + m, rest)
+        else addTermList(x, xs, n, rest ++ List(a))
+      }
+      case (a@ CompositeTerm(BinOp("*"), y)) :: xs => {
+        if (CompositeTerm(BinOp("*"), y) == CompositeTerm(BinOp("*"), x))
+          addTermList(x, xs, n+Integer(1), rest)
+        else addTermList(x, xs, n, rest ++ List(a))
+      }
+      case (a@ CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("*"),  (m: Number):: y) :: Nil)) :: xs => {
+        if (CompositeTerm(BinOp("*"), y) == CompositeTerm(BinOp("*"), x))
+          addTermList(x, xs, n - m, rest)
+        else addTermList(x, xs, n, rest ++ List(a))
+      }
+      case (a@ CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("*"),  y) :: Nil)) :: xs => {
+        if (CompositeTerm(BinOp("*"), y) == CompositeTerm(BinOp("*"), x))
+          addTermList(x, xs, n - Integer(1), rest)
+        else addTermList(x, xs, n, rest ++ List(a))
       }
       case y :: xs => {
-        addTerm(x, xs, n, rest ++ List(y))
+        addTermList(x, xs, n, rest ++ List(y))
       }
     }
 
@@ -592,11 +616,35 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
         else if (n == Integer(0)) addList(rest, result)
         else addList(rest, result ++ List(n*x))
       }
-      case CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("*"),  (m: Number):: x :: Nil) :: Nil) :: xs => {
+      case CompositeTerm(BinOp("*"), (m: Number) :: x) :: xs => {
+        val (n, rest) = addTermList(x, xs, m, Nil)
+        if (n == Integer(1)) addList(rest, result ++ List(CompositeTerm(BinOp("*"), x)))
+        else if (n == Integer(0)) addList(rest, result)
+        else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x)))
+      }
+      case (a@ CompositeTerm(BinOp("*"), x)) :: xs => {
+        val (n, rest) = addTermList(x, xs, Integer(1), Nil)
+        if (n == Integer(1)) addList(rest, result ++ List(a))
+        else if (n == Integer(0)) addList(rest, result)
+        else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x)))
+      }
+      case CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("*"), (m: Number):: x :: Nil) :: Nil) :: xs => {
         val (n, rest) = addTerm(x, xs, -m, Nil)
         if (n == Integer(1)) addList(rest, result ++ List(x))
         else if (n == Integer(0)) addList(rest, result)
         else addList(rest, result ++ List(n*x))
+      }
+      case CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("*"), (m: Number):: x) :: Nil) :: xs => {
+        val (n, rest) = addTermList(x, xs, -m, Nil)
+        if (n == Integer(1)) addList(rest, result ++ List(CompositeTerm(BinOp("*"), x)))
+        else if (n == Integer(0)) addList(rest, result)
+        else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x)))
+      }
+      case CompositeTerm(UnaryOp("-"), CompositeTerm(BinOp("*"), x) :: Nil) :: xs => {
+        val (n, rest) = addTermList(x, xs, Integer(-1), Nil)
+        if (n == Integer(1)) addList(rest, result ++ List(CompositeTerm(BinOp("*"), x)))
+        else if (n == Integer(0)) addList(rest, result)
+        else addList(rest, result ++ List(CompositeTerm(BinOp("*"), n :: x)))
       }
       case CompositeTerm(UnaryOp("-"), x :: Nil) :: xs => {
         val (n, rest) = addTerm(x, xs, Integer(-1), Nil)
