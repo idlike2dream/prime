@@ -93,7 +93,7 @@ trait Univariate extends Function {
 
   def cancel: Term = funcApply(arg1.cancel)
 
-  def add: Term = funcApply(arg1.add)
+  def opSimp: Term = funcApply(arg1.opSimp)
 
 }
 
@@ -161,6 +161,6 @@ trait Bivariate extends Function {
 
   def cancel: Term = funcApply(arg1.cancel, arg2.cancel)
 
-  def add: Term = funcApply(arg1.add, arg2.add)
+  def opSimp: Term = funcApply(arg1.opSimp, arg2.opSimp)
 
 }

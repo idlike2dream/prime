@@ -15,6 +15,7 @@ class Expression extends FunSuite {
     val b = (x*y*(x*(y+(z+(x*y*z)))))
 
     assert((x*(y*z)).flatten === (x*y*z).flatten)
+    assert((x/(y+x+z)).flatten === (x/(x+z+y)).flatten)
     assert(a.flatten === (x+y+y+z).flatten)
     assert(b.flatten === (x*y*x*(y + z + (x*y*z))).flatten)
   }
@@ -56,7 +57,6 @@ class Expression extends FunSuite {
     assert((x*3*4*1).flatten.reduceNumber.toString === "(12*x)")
   }
   test("groupNegative"){
-    assert((x-y-z).flatten.groupNegative.toString === "(x - (y + z))")
     assert((x*(-y)*(-z)).flatten.groupNegative === (x*y*z).flatten)
   }
   test("groupDivide"){
@@ -98,41 +98,62 @@ class Expression extends FunSuite {
     assert((x+1+1+1).reduce.toString === "(x + 3)")
     assert((x*3*4*1).reduce.toString === "(12*x)")
 
-    assert((x-y-z).flatten.groupNegative.toString === "(x - (y + z))")
     assert((x*(-y)*(-z)).flatten.groupNegative === (x*y*z).flatten)
 
     assert(((x/y)*(x/z)).reduce === (x**2)/(y*z))
 
     assert((x-x).reduce === Integer(0))
-    assert((x-x+y-y).reduce === Integer(0))
+    assert((x-x+y-y).reduce.reduceNumber.groupNegative === Integer(0))
     assert((2*x - 2*x).reduce === Integer(0))
-   // assert((x*(y -y)).cancel === Integer(0))
+    assert((x*(y -y)).reduce === Integer(0))
     assert((x-x+x).reduce === x)
     assert((x - (x - x + (x + x -x ))).reduce === Integer(0))
+
+    assert((5*x).reduce === 5*x)
+    assert((x+5*x).reduce === 6*x)
+    assert((x - y + 3*x + 4*y + x - 3*x + x*y).reduce ===  (x*y + 2*x + 3*y).flatten)
+    assert((x+y+z).reduce === (x + y + z).flatten)
+    assert(x*(x+x+3*x).reduce === 5*x*x)
+    assert((x-x).reduce === Integer(0))
+    assert((x-x+y-y).reduce === Integer(0))
+    assert((-(x+y+z) + z + y).reduce === -x )
+    assert((2*x - 2*x).reduce === Integer(0))
+    assert((x*(y -y)).reduce === Integer(0))
+    assert((x-x+x).reduce === x)
+    assert((x - (x - x + (x + x -x ))).reduce === Integer(0))
+    assert((x**3**2).reduce == x**6)
+    assert((x*y*(y**2/z)).reduce === ((x*(y**3))/z).flatten)
+    assert(((x/y)*(y/z)*(z/x)).reduce === Integer(1))
+    assert(((x**2/y)*(y**2/z)*(z**2/x)).reduce === (x*y*z).flatten)
   }
 
   test("addsub"){
-    assert((x+5*x).add.simplifyTerm === 6*x)
-    assert((x - y + 3*x + 4*y + x - 3*x + x*y).flatten.add ===  (x*y + 2*x + 3*y).flatten)
-    assert((x+y+z).flatten.add === (x + y + z).flatten)
-    assert(x*(x+x+3*x).flatten.add.simplifyTerm === 5*x*x)
-    assert((x-x).add.simplifyTerm === Integer(0))
-    assert((x-x+y-y).flatten.add.simplifyTerm === Integer(0))
-    assert((-(x+y+z) + z + y).flatten.add.groupNegative.simplifyTerm === -x )
-    assert((2*x - 2*x).add.simplifyTerm === Integer(0))
-    assert((x*(y -y)).add.simplifyTerm.mulZero === Integer(0))
-    assert((x-x+x).flatten.add.simplifyTerm === x)
-    assert((x - (x - x + (x + x -x ))).flatten.add.simplifyTerm.add.simplifyTerm === Integer(0))
+    assert((5*x).opSimp === 5*x)
+    assert((x+5*x).opSimp.simplifyTerm === 6*x)
+    assert((x - y + 3*x + 4*y + x - 3*x + x*y).flatten.opSimp ===  (x*y + 2*x + 3*y).flatten)
+    assert((x+y+z).flatten.opSimp === (x + y + z).flatten)
+    assert(x*(x+x+3*x).flatten.opSimp.simplifyTerm === 5*x*x)
+    assert((x-x).opSimp.simplifyTerm === Integer(0))
+    assert((x-x+y-y).flatten.opSimp.simplifyTerm === Integer(0))
+    assert((-(x+y+z) + z + y).flatten.opSimp.groupNegative.simplifyTerm === -x )
+    assert((2*x - 2*x).opSimp.simplifyTerm === Integer(0))
+    assert((x*(y -y)).opSimp.simplifyTerm.mulZero === Integer(0))
+    assert((x-x+x).flatten.opSimp.simplifyTerm === x)
+    assert((x - (x - x + (x + x -x ))).flatten.opSimp.simplifyTerm.opSimp.simplifyTerm === Integer(0))
+    assert((x**3**2).opSimp == x**6)
+    assert((x*y*(y**2/z)).flatten.opSimp.opSimp.opSimp.flatten.opSimp.simplifyTerm.simplifyTerm === ((x*(y**3))/z).flatten)
+    assert(((x/y)*(y/z)*(z/x)).flatten.opSimp.flatten.opSimp === Integer(1))
+    assert(((x**2/y)*(y**2/z)*(z**2/x)).flatten.opSimp.opSimp.flatten.opSimp === (x*y*z).flatten)
   }
 
- // test("Division Differentiation"){
- //   assert((1/x).diff(x) === (-1/(x**2)))
- //   assert((y/x).diff(x) === (-y/(x**2)))
- //   assert((x/x).diff(x).cancel === Integer(0))
- //   //assert((y/x).diff(x) === y*(-1/(x**2)))
- // }
+  test("Division Differentiation"){
+    assert((1/x).diff(x).reduce === (-1/(x**2)))
+    assert((y/x).diff(x).reduce === (-y/(x**2)).reduce)
+    assert((x/x).diff(x).reduce === Integer(0))
+    assert((y/x).diff(x).reduce === (-y/(x**2)))
+  }
 
- test("Cancel"){
+  test("Cancel"){
     assert((x-x).cancel.simplifyTerm === Integer(0))
     assert((x-x+y-y).flatten.cancel.simplifyTerm === Integer(0))
     assert((2*x - 2*x).cancel.simplifyTerm === Integer(0))
@@ -142,32 +163,36 @@ class Expression extends FunSuite {
     assert((x/x).cancel === Integer(1))
     assert((x/(x*y)).cancel === 1/y )
     assert(((x*y)/x).cancel === y )
- }
- test("identities of expand"){
-   assert((x).expand === x)
+  }
+  test("identities of expand"){
+    assert((x).expand === x)
 
-   assert((x+y).expand === (x+y))
+    assert((x+y).expand === (x+y))
 
-   assert((x**2).expand.groupMultiple.delIdentity.simplifyTerm === x**2)
+    assert((x**2).expand.groupMultiple.delIdentity.simplifyTerm === x**2)
 
-   assert((x*y).expand.delIdentity.simplifyTerm === (x*y))
- }
-//  test("expand of Multiply"){
-//    assert(((x+y)*(x+y)).expand === (x**2 + 2*x*y + y**2))
+    assert((x*y).expand.delIdentity.simplifyTerm === (x*y))
+  }
+  test("expand of Multiply"){
+    assert(((x+y)*(x+y)).expand.reduce === (x**2 + 2*x*y + y**2).reduce)
 
-//    assert(((x+y)*(x+y)*(x+y)).expand === (x*x*x + 3*y*y*x + 3*x*x*y + y*y*y))
+    assert(((x+y)*(x+y)*(x+y)).expand.reduce === (x*x*x + 3*y*y*x + 3*x*x*y + y*y*y).reduce)
 
-//    // fails without reduce on both sides And wierdly Why is there a "- 0" in
-//    // both sides when reduce is not present on either sides
-//    // ((3*x*y**2) + x**3 + y**3 + (3*y*x**2) - 0) did not equal
-//    // (x**3 + y**3 + (3*y*x**2) + (3*x*y**2) - 0)
-//    assert(((x+y)*(x+y)*(x+y)).expand.reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
+    assert(((x+y)*(x+y)*(x+y)).expand.reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
 
-//    assert(((x+y)*y*z).expand === (x*y*z + y*y*z))
-//  }
-//  test("expand of power"){
-//    assert(((x+y)**2).expand === (x**2 + 2*x*y + y**2))
+    assert(((x+y)*y*z).expand.reduce === (x*y*z + y*y*z).reduce)
+  }
+  test("expand of power"){
+    assert(((x+y)**2).expand.reduce === (x**2 + 2*x*y + y**2).reduce)
 
-//    assert(((x+y)**3).expand.reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
-//  }
+    assert(((x+y)**3).expand.reduce === (x**3 + 3*y*(x**2) + 3*x*(y**2) + y**3).reduce)
+  }
+  test("rogue"){
+    assert(((x/y)*(x/z)).reduce === (x**2)/(y*z))
+    assert((x-x+x).reduce === x)
+    assert((x - y + 3*x + 4*y + x - 3*x + x*y).reduce.simplifyTerm ===  (x*y + 2*x + 3*y).flatten)
+    assert((-(x+y+z) + z + y).reduce === -x)
+    assert((x*y*(y**2/z)).reduce === ((x*(y**3))/z).flatten)
+    assert(((x**2/y)*(y**2/z)*(z**2/x)).reduce === (x*y*z).flatten)
+  }
 }
