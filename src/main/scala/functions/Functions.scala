@@ -58,14 +58,6 @@ trait Univariate extends Function {
     * then return `a` otherwise the term itself */
   def simplifyTerm: Term = funcApply(arg1.simplifyTerm)
 
-  /** Reduces the mulitiplicy of the same object in the argument(CTS) of Function
-    * for example
-    *
-    * `f(x+x+x+x)` is converted to `f(4*x)` and
-    * `f(x*x*x*x)` is converted to `f(x**4)`
-    */
-  def groupMultiple: Term = funcApply(arg1.groupMultiple)
-
   /** Reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)))
     * to f(0) */
   def mulZero: Term = funcApply(arg1.mulZero)
@@ -90,8 +82,6 @@ trait Univariate extends Function {
   def reduce: Term = funcApply(arg1.reduce)
 
   def expand: Term = funcApply(arg1.expand)
-
-  def cancel: Term = funcApply(arg1.cancel)
 
   def opSimp: Term = funcApply(arg1.opSimp)
 
@@ -123,15 +113,6 @@ trait Bivariate extends Function {
     * the term itself */
   def simplifyTerm: Term = funcApply(arg1.simplifyTerm, arg2.simplifyTerm)
 
-  /** Reduces the mulitiplicy of the same object in the argument(CTS) of Function
-    * for example
-    *
-    * `f(x+x+x+x, y)` is converted to `f(4*x, y)` and
-    * `f(x*x*x*x, y)` is converted to `f(x**4, y)`
-    */
-  def groupMultiple: Term =
-    funcApply(arg1.groupMultiple, arg2.groupMultiple)
-
   /** Reduces the f(CompositeTerm(BinOp("*"), List(...,Integer(0),...)), a)
     * to f(0, a) */
   def mulZero: Term = funcApply(arg1.mulZero, arg2.mulZero)
@@ -158,8 +139,6 @@ trait Bivariate extends Function {
   def reduce: Term = funcApply(arg1.reduce, arg2.reduce)
 
   def expand: Term = funcApply(arg1.expand, arg2.expand)
-
-  def cancel: Term = funcApply(arg1.cancel, arg2.cancel)
 
   def opSimp: Term = funcApply(arg1.opSimp, arg2.opSimp)
 

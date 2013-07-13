@@ -125,7 +125,6 @@ trait Term extends Expression with BasicOperators {
   def flatten: Term
   def delIdentity: Term
   def simplifyTerm: Term
-  def groupMultiple: Term
   def mulZero: Term
   def reduceNumber: Term
   def groupNegative: Term
@@ -134,7 +133,6 @@ trait Term extends Expression with BasicOperators {
 
   def reduce: Term
   def expand: Term
-  def cancel: Term
   def opSimp: Term
 
   def formatToString: String
@@ -161,9 +159,6 @@ trait AtomicTerm extends Term {
   def simplifyTerm: Term = this
 
   /** Simply returns the atomic term itself */
-  def groupMultiple: Term = this
-
-  /** Simply returns the atomic term itself */
   def mulZero: Term = this
 
   /** Simply returns the atomic term itself */
@@ -183,9 +178,6 @@ trait AtomicTerm extends Term {
 
   /** Simply returns the atomic term itself */
   def expand: Term = this
-
-  /** Simply returns the atomic term itself*/
-  def cancel: Term = this
 
   /** Simply returns the atomic term itself*/
   def opSimp: Term = this
@@ -272,27 +264,6 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     case (BinOp("/"), List(CompositeTerm(BinOp("/"), a1), CompositeTerm(BinOp("/"), a2))) => (a1(0) * a2(1)) / (a1(1) * a2(0))
     case (BinOp("/"), List(CompositeTerm(BinOp("/"), a1), a2)) => a1(0) / (a2 * a1(1))
     case (BinOp("/"), List(a1, CompositeTerm(BinOp("/"), a2))) => (a1 * a2(1)) / a2(0)
-    case (fu, ar) => CompositeTerm(fu, ar)
-  }
-
-  /** Reduces the mulitiplicy of the same object in the CompositeTerm tree Structure
-    * for example
-    *
-    * `(x+x+x+x)` is converted to `4*x` and `(x*x*x*x)` is converted to `x**4`
-    */
-  def groupMultiple: Term = (f, args map {_.groupMultiple}) match {
-    case (BinOp("+"), ar) => {
-      val finalList = ar.groupBy(identity).map{
-        case (x,ls) => {val n = ls.size; if(n==1) x else Integer(n)*x}
-      }.toList
-      CompositeTerm(BinOp("+"), finalList)
-    }
-    case (BinOp("*"), ar) => {
-      val finalList = ar.groupBy(identity).map{
-        case (x,ls) => {val n = ls.size; if(n==1) x else x**Integer(n)}
-      }.toList
-      CompositeTerm(BinOp("*"), finalList)
-    }
     case (fu, ar) => CompositeTerm(fu, ar)
   }
 
@@ -486,7 +457,7 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
             pointMul(additiveMul(adds), terms)
         }
       }
-      case CompositeTerm(BinOp("**"), a :: (n: Integer) :: Nil) => {
+      case CompositeTerm(BinOp("**"), (a: CompositeTerm) :: (n: Integer) :: Nil) => {
         val args = List.fill(n.arg1.toInt)(a)
         expandHere(CompositeTerm(BinOp("*"), args))
       }
@@ -496,7 +467,7 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     def expandRecur(y: Term): Term = y match {
       case CompositeTerm(BinOp("*"), a) =>
         expandHere(CompositeTerm(BinOp("*"), a map {expandRecur(_)} ))
-      case CompositeTerm(BinOp("**"), a :: (n: Integer) :: Nil) => {
+      case CompositeTerm(BinOp("**"), (a: CompositeTerm) :: (n: Integer) :: Nil) => {
         val args = List.fill(n.arg1.toInt)(a)
         expandHere(CompositeTerm(BinOp("*"), args map {expandRecur(_)}))
       }
@@ -504,76 +475,6 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     }
 
     expandRecur(this)
-  }
-
-  def cancel: Term = (f, args map {_.cancel}) match {
-    case (BinOp("+"), ar) => {
-      def cancelAdd(list: List[Term], acc: List[Term]): List[Term] = list match {
-        case Nil => acc match {case Nil => Integer(0) :: Nil ; case _ => acc }
-        case x :: xs => {
-          val negX = CompositeTerm(UnaryOp("-"), x :: Nil)
-          if (xs exists {case `negX` => true; case _ => false}) {
-            val newList = (xs.toBuffer -= negX).toList
-            cancelAdd(newList, acc)
-          }
-          else cancelAdd(xs, acc ++ List(x))
-        }
-      }
-      CompositeTerm(BinOp("+"), cancelAdd(ar, Nil))
-    }
-    case (BinOp("/"), List(CompositeTerm(BinOp("*"), a1), CompositeTerm(BinOp("*"), a2))) => {
-      def cancelDiv(n: List[Term], d: List[Term], num: List[Term]): Term = (n, d) match {
-        case (Nil, Nil) => num match {
-          case Nil => Integer(1)
-          case x :: Nil => x
-          case _ => CompositeTerm(BinOp("*"), num)
-        }
-        case (Nil, _) => {
-          val ctD = CompositeTerm(BinOp("*"), d)
-          num match {
-            case Nil => CompositeTerm(BinOp("/"), Integer(1) :: ctD:: Nil)
-            case _ => CompositeTerm(BinOp("/"), CompositeTerm(BinOp("*"), num) :: ctD :: Nil)
-          }
-        }
-        case (_, Nil) => num match {
-          case Nil => CompositeTerm(BinOp("*"), n)
-          case _ => CompositeTerm(BinOp("*"), num ++ n)
-        }
-        case (_, _) => {
-          if (d exists {x => if(x == n.head) true else false}) {
-            val newD = (d.toBuffer -= n.head).toList
-            cancelDiv(n.tail, newD, num)
-          }
-          else cancelDiv(n.tail, d, num ++ List(n.head))
-        }
-      }
-      cancelDiv(a1, a2, Nil)
-    }
-    case (BinOp("/"), ar@ List(a1, CompositeTerm(BinOp("*"), a2))) => {
-      if (a2 exists {_ == a1}) {
-        (a2.toBuffer -= a1).toList match {
-          case Nil => Integer(1)
-          case x :: Nil => Integer(1)/ x
-          case xs => Integer(1) / CompositeTerm(BinOp("*"), xs)
-        }
-      }
-      else CompositeTerm(BinOp("/"), ar)
-    }
-    case (BinOp("/"), ar@ List(CompositeTerm(BinOp("*"), a1), a2)) => {
-      if (a1 exists {_ == a2}) {
-        (a1.toBuffer -= a2).toList match {
-          case Nil => Integer(1)
-          case x :: Nil => x
-          case xs => Integer(1) / CompositeTerm(BinOp("*"), xs)
-        }
-      }
-      else CompositeTerm(BinOp("/"), ar)
-    }
-    case (BinOp("/"), a1 :: a2 :: Nil) => {
-      if (a1 == a2) Integer(1)
-      else CompositeTerm(BinOp("/"), a1 :: a2 :: Nil)
-    }
-    case (_, ar) => CompositeTerm(f, ar)
   }
 
   def opSimp: Term = {

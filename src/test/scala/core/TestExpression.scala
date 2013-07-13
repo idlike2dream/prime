@@ -38,11 +38,6 @@ class Expression extends FunSuite {
     assert((x/(x/y)).simplifyTerm === (x*y)/x)
     assert(((x/y)/(y/x)).simplifyTerm === (x*x)/(y*y))
   }
-  test("reduceMultiplicity") {
-
-    assert((x+x+x+y+y+z).flatten.groupMultiple === (3*x + 2*y +z).flatten)
-    assert((x*x*x*y*y*z).flatten.groupMultiple === ((x**3)*(y**2)*z).flatten)
-  }
   test("mulZero"){
     val a = (x+(y+(y+z)*0))
     val b = (x*y*(x*(y*0+(z+(x*y*z))*0)))
@@ -60,7 +55,7 @@ class Expression extends FunSuite {
     assert((x*(-y)*(-z)).flatten.groupNegative === (x*y*z).flatten)
   }
   test("groupDivide"){
-    assert(((x/y)*(x/z)).flatten.groupDivide.flatten.delIdentity.groupMultiple.simplifyTerm === (x**2)/(y*z))
+    assert(((x/y)*(x/z)).flatten.groupDivide.opSimp === (x**2)/(y*z))
   }
   test("reduce"){
     val a1 = (x+(y+(y+z)))
@@ -153,23 +148,12 @@ class Expression extends FunSuite {
     assert((y/x).diff(x).reduce === (-y/(x**2)))
   }
 
-  test("Cancel"){
-    assert((x-x).cancel.simplifyTerm === Integer(0))
-    assert((x-x+y-y).flatten.cancel.simplifyTerm === Integer(0))
-    assert((2*x - 2*x).cancel.simplifyTerm === Integer(0))
-    assert((x*(y -y)).cancel.simplifyTerm.mulZero === Integer(0))
-    assert((x-x+x).flatten.cancel.simplifyTerm === x)
-    assert((x - (x - x + (x + x -x ))).flatten.cancel.simplifyTerm.cancel.simplifyTerm === Integer(0))
-    assert((x/x).cancel === Integer(1))
-    assert((x/(x*y)).cancel === 1/y )
-    assert(((x*y)/x).cancel === y )
-  }
   test("identities of expand"){
     assert((x).expand === x)
 
     assert((x+y).expand === (x+y))
 
-    assert((x**2).expand.groupMultiple.delIdentity.simplifyTerm === x**2)
+    assert((x**2).expand === x**2)
 
     assert((x*y).expand.delIdentity.simplifyTerm === (x*y))
   }
