@@ -190,8 +190,30 @@ trait AtomicTerm extends Term {
 case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   require(args != Nil, throw new Error("arguments can't be zero"))
 
-  /** Flattens the CompositeTerm tree structure with respect to an associative
-    * operator `func` only the top most layer.*/
+  /** Flattens the CompositeTerm tree structure with respect to the associative
+    * operators "+", "*" recursivley.
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._, prime.core.implicits._
+    * import prime.core._
+    * import prime.core.implicits._
+    *
+    * scala> val (a, b, c) = (Symbol("a"), Symbol("b"), Symbol("c"))
+    * a: prime.core.Symbol = a
+    * b: prime.core.Symbol = b
+    * c: prime.core.Symbol = c
+    *
+    * scala> (a*(b*c)).flatten
+    * res0: prime.core.Term = (a*b*c)
+    *
+    * scala> (a+(b+c)).delIdentity
+    * res1: prime.core.Term = (a + b + c)
+    * }}}
+    *
+    */
+
   def flatten: Term = {
     def flatList(func: BinOp, a: List[Term], b: List[Term]): List[Term] = a match {
       case Nil => b
@@ -209,8 +231,26 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     }
   }
 
-  /** Deletes the identity elements `id` with respect to  the operator `func` on
-    * the `CompositeTerm(func, _)` tree structure */
+  /** simplifies Terms using various identities on CompositeTerm recursively
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._, prime.core.implicits._
+    * import prime.core._
+    * import prime.core.implicits._
+    *
+    * scala> val a = Symbol("a")
+    * a: prime.core.Symbol = a
+    *
+    * scala> (a*1)..delIdentity
+    * res0: prime.core.Term = a
+    *
+    * scala> (a+0).delIdentity
+    * res1: prime.core.Term = a
+    * }}}
+    *
+    */
   def delIdentity: Term = {
     def filterTerm(id: Term, ar: List[Term]): List[Term] = ar filter (_!=id) match {
       case Nil => id :: Nil
@@ -223,6 +263,11 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
       case (BinOp("*"), ar) => {
         CompositeTerm(BinOp("*"), filterTerm(Integer(1), ar))
       }
+      case (BinOp("/"), CompositeTerm(BinOp("*"), a):: CompositeTerm(BinOp("*"), b):: Nil) => {
+        val num = CompositeTerm(BinOp("*"), filterTerm(Integer(1), a))
+        val dnum = CompositeTerm(BinOp("*"), filterTerm(Integer(1), b))
+        num / dnum
+      }
       case (BinOp("/"), ar) => {
         if (ar(1) == Integer(1)) ar(0) else CompositeTerm(f, ar)
       }
@@ -234,8 +279,27 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     }
   }
 
-  /** If CompositeTerm is of the form `CompositeTerm(BinOp(_), a::Nil)` then
-    return `a` otherwise the term itself */
+  /** simplifies Terms by removing redudant CompositeTerm expression
+    * recursively
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._, prime.core.implicits._
+    * import prime.core._
+    * import prime.core.implicits._
+    *
+    * scala> val a = Symbol("a")
+    * a: prime.core.Symbol = a
+    *
+    * scala> CompositeTerm(BinOp("+"), List(a)).simpifyTerm
+    * res0: prime.core.Term = a
+    *
+    * scala> CompositeTerm(BinOp("*"), List(a)).simpifyTerm
+    * res1: prime.core.Term = a
+    * }}}
+    *
+    */
   def simplifyTerm: Term = (f, args map {_.simplifyTerm}) match {
     case (BinOp("+"), x :: Nil) => x
     case (BinOp("*"), x :: Nil) => x
@@ -267,8 +331,21 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     case (fu, ar) => CompositeTerm(fu, ar)
   }
 
-  /** Reduces the CompositeTerm(BinOp("*"), List(..., 0, ...))
-    * to Integer(0) or CompositeTerm(BinOp("/"), 0 :: _ :: Nil) to 0  */
+  /** ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._, prime.core.implicits._
+    * import prime.core._
+    * import prime.core.implicits._
+    *
+    * scala> val a = Symbol("a")
+    * a: prime.core.Symbol = a
+    *
+    * scala> (a*0*2*a).mulZero
+    * res0: prime.core.Term = 0
+    * }}}
+    *
+    */
   def mulZero: Term = (f, args map {_.mulZero}) match {
     case (BinOp("*"), ar) => {
       if (ar exists (_==Integer(0))) Integer(0) else CompositeTerm(BinOp("*"), ar)
@@ -282,6 +359,26 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   /** Rule 0: Simplify numbers with respect to corresponding operator
     * Rule 1: Keep Simplified Number as first term of list in CompositeTerm(BinOp("*"), _)
     * Rule 2: Keep Simplified Number as  last term of list in CompositeTerm(BinOp("+"), _)
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._, prime.core.implicits._
+    * import prime.core._
+    * import prime.core.implicits._
+    *
+    * scala> val (a, b, c) = (Symbol("a"), Symbol("b"), Symbol("c"))
+    * a: prime.core.Symbol = a
+    * b: prime.core.Symbol = b
+    * c: prime.core.Symbol = c
+    *
+    * scala> (a+2+b+3).flatten.simpifyTerm
+    * res0: prime.core.Term = (a + b + 5)
+    *
+    * scala> (a*2*b*3).flatten.simpifyTerm
+    * res1: prime.core.Term = (6*a*b)
+    * }}}
+    *
     */
   def reduceNumber: Term = (f, args map {_.reduceNumber}) match {
     case (BinOp("*"), ar) => {
@@ -305,8 +402,27 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     case (fu, ar) => CompositeTerm(fu, ar)
   }
 
-  /** Reduces (x - y - z) to (x - (y+z)) and x*(-y)*(-z) = x*y*z */
-  // #TODO Find the culprit that causes " - 0" here and there
+  /** Reduces  x*(-y)*(-z) to (x*y*z)
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._
+    * import prime.core._
+    *
+    * scala> val (a, b, c) = (Symbol("a"), Symbol("b"), Symbol("c"))
+    * a: prime.core.Symbol = a
+    * b: prime.core.Symbol = b
+    * c: prime.core.Symbol = c
+    *
+    * scala> (a*(-b)*(-c)).flatten.groupNegative
+    * res0: prime.core.Term = (a*b*c)
+    *
+    * scala> (a*(-b)*(c)).flatten.groupNegative
+    * res1: prime.core.Term = -(a*c*b)
+    * }}}
+    *
+    */
   def groupNegative: Term = (f, args map {_.groupNegative}) match {
     case (BinOp("*"), ar) => {
       val (neg, pos) = {
@@ -352,7 +468,23 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   // This doesn't necessarily depend on Ordering because of it's definition.
   // Even a corresponding recur term
 
-  /** Reduces expresstion like this abs(-x) to abs(x) */
+  /** Reduces expresstion like this abs(-x) to abs(x)
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._
+    * import prime.core._
+    *
+    * scala> val a = Symbol("a")
+    * a: prime.core.Symbol = a
+    *
+    * scala> ((-x).abs).minusAbs
+    * res0: prime.core.Term = abs(x)
+    *
+    * }}}
+    *
+    */
   def minusAbs: Term = (f, args map {_.minusAbs}) match {
     case (UnaryOp("abs"), CompositeTerm(UnaryOp("-"), a::Nil)::Nil) => a
     case (_, ar) => CompositeTerm(f, ar)
@@ -419,7 +551,27 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     reduceOne(Integer(0), this)
   }
 
-  // expand((x+y)*(x+y)) => (x**2 + 2*x*y + y**2)
+  /** Expands expression recursively using distributivity of * over +
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._
+    * import prime.core._
+    *
+    * scala> val (a, b, c) = (Symbol("a"), Symbol("b"), Symbol("c"))
+    * a: prime.core.Symbol = a
+    * b: prime.core.Symbol = b
+    * c: prime.core.Symbol = c
+    *
+    * scala> ((a+b)**2).expand.opSimp
+    * res0: prime.core.Term = (a**2 + (2*a*b) + b**2)
+    *
+    * scala> ((a+b)*(b+c)).expand.opSimp
+    * res1: prime.core.Term = ((a*b) + (a*c) + b**2 + (b*c))
+    * }}}
+    *
+    */
   def expand: Term = {
     def expandHere(y: Term): Term = y match {
       case CompositeTerm(BinOp("*"), args) => {
@@ -477,6 +629,28 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     expandRecur(this)
   }
 
+  /** Performs basic symbolic manipulation such as addition, multiplication.
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._, prime.core.implicits._
+    * import prime.core._
+    * import prime.core.implicits._
+    *
+    * scala> val (a, b, c) = (Symbol("a"), Symbol("b"), Symbol("c"))
+    * a: prime.core.Symbol = a
+    * b: prime.core.Symbol = b
+    * c: prime.core.Symbol = c
+    *
+    * scala> (a+b+c+a+b).flatten.opSimp
+    * res0: prime.core.Term = ((2*a) + (2*b) + c)
+    *
+    * scala> (a*c*b*a*c).flatten.opSimp
+    * res1: prime.core.Term = (a**2*c**2*b)
+    * }}}
+    *
+    */
   def opSimp: Term = {
     def mulTerm(x: Term, terms: List[Term], n: Number, rest: List[Term]): (Number, List[Term]) = terms match {
       case Nil => (n, rest)
@@ -691,8 +865,36 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     }
   }
 
-  /** Differentiate the CompositeTerm with respect to an independent variable `x`*/
-  // #TODO write cases for operators abs, /
+  // #TODO write cases for operators abs
+  /** Differentiates a CompositeTerm with respect to an independent variable.
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._
+    * import prime.core._
+    *
+    * scala> val (x, y) = (Symbol("x"), Symbol("y"))
+    * x: prime.core.Symbol = x
+    * y: prime.core.Symbol = y
+    *
+    * scala> x.diff(x)
+    * res0: prime.core.Term = 1
+    *
+    * scala> (x+y).diff(x).reduce
+    * res1: prime.core.Term = 1
+    *
+    * scala> (x*y).diff(x).reduce
+    * res2: prime.core.Term = y
+    *
+    * scala> (x**3).diff(x).reduce
+    * res3: prime.core.Term = (3*x**2)
+    * }}}
+    *
+    * scala> (y/x).diff(x).reduce
+    * res4: prime.core.Term = (-y/x**2)
+    *
+    */
   def diff(x: Symbol): Term = f match {
     case BinOp("+") | UnaryOp("-") => CompositeTerm(f, args.map(_.diff(x)))
     case BinOp("*") => {
@@ -719,10 +921,32 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
     case _ => BinOp("diff")(this, x)
   }
 
+  /** Differentiates a CompositeTerm with respect to an independent variable
+    * `n` times
+    *
+    * ==Examples==
+    *
+    * {{{
+    * scala> import prime.core._
+    * import prime.core._
+    *
+    * scala> val (x, y) = (Symbol("x"), Symbol("y"))
+    * x: prime.core.Symbol = x
+    * y: prime.core.Symbol = y
+    *
+    * scala> (x**3).diff(x, 3)
+    * res0: prime.core.Term = 6
+    *
+    * scala> ((x+y)**3).diff(x, 2)
+    * res0: prime.core.Term = (6*(x + y))
+    *
+    * }}}
+    *
+    */
   override def diff(x: Symbol, n: Int): Term = {
     assert(n > 0, throw new Error("n can't less that 1"))
     def diffAcc(t: Term, s: Symbol, m: Int): Term = {
-      if (m == 1) t.diff(x)
+      if (m == 1) t.diff(x).reduce
       else diffAcc(t.diff(x).reduce, s, m - 1)
     }
     diffAcc(this, x, n)
@@ -759,8 +983,10 @@ case class CompositeTerm(f: Operator, args: List[Term]) extends Term {
   override def toString = formatToString
 
   /** Experimenting with `==` Not final yet. */
-  override def equals(a: Any) = a match {
-    case CompositeTerm(`f`, ar) => (ar.groupBy(identity) == args.groupBy(identity))
+  override def equals(a: Any) = (f, a) match {
+    case (BinOp("*"), CompositeTerm(BinOp("*"), ar)) => (ar.groupBy(identity) == args.groupBy(identity))
+    case (BinOp("+"), CompositeTerm(BinOp("+"), ar)) => (ar.groupBy(identity) == args.groupBy(identity))
+    case (_, CompositeTerm(`f`, ar)) => (ar == args)
     case _ => false
   }
 

@@ -143,11 +143,12 @@ class Expression extends FunSuite {
     assert(((x**2/y)*(y**2/z)*(z**2/x)).flatten.opSimp.opSimp.flatten.opSimp === (x*y*z).flatten)
   }
 
-  test("Division Differentiation"){
+  test("Differentiation"){
     assert((1/x).diff(x).reduce === (-1/(x**2)))
     assert((y/x).diff(x).reduce === (-y/(x**2)).reduce)
     assert((x/x).diff(x).reduce === Integer(0))
     assert((y/x).diff(x).reduce === (-y/(x**2)))
+    assert((x**10).diff(x, 10).reduce === Integer(720*7*8*9*10))
   }
 
   test("identities of expand"){
