@@ -29,4 +29,3 @@ object Constants {
 
   val e = ConstantE
 }
-
