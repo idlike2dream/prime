@@ -5,7 +5,7 @@ sealed trait Expression
 abstract class Operator(val degree: Int) extends Expression {
 
   /** Name of function */
-  def op: String
+  val op: String
 
   /** Substitute parameters in the predicate */
   def apply(args: List[Term]): Term = {
