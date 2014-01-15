@@ -122,6 +122,8 @@ class Expression extends FunSuite {
     assert((x*y*(y**2/z)).reduce === ((x*(y**3))/z).flatten)
     assert(((x/y)*(y/z)*(z/x)).reduce === Integer(1))
     assert(((x**2/y)*(y**2/z)*(z**2/x)).reduce === (x*y*z).flatten)
+    
+    assert((x/x).reduce === Integer(1))
   }
 
   test("addsub"){
